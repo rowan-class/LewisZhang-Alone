@@ -23,7 +23,7 @@ public class FuelBarrelEntity : SpaceEntity
     {
         if (_carrier != null)
         {
-            _position = _carrier.GetCarryAnchor();
+            _position = _carrier.GetCarryAnchor(_size);
             return;
         }
 

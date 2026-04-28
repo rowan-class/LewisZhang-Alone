@@ -9,7 +9,7 @@ namespace LewisZhang_Alone;
 public class Game1 : Game
 {
     // Default debug state. Press F3 in-game to toggle collision bounds.
-    public static bool Debug = false;
+    public static bool Debug = true;
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _entityBatch;
 

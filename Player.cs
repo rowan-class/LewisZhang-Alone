@@ -86,9 +86,16 @@ public class Player : PhysicsEntity
         return System.Array.Empty<Rectangle>();
     }
 
-    public Vector2 GetCarryAnchor()
+    public Vector2 GetCarryAnchor(Point carriedItemSize)
     {
-        return new Vector2(_position.X + _size.X + 8f, _position.Y + 10f);
+        float anchorY = _position.Y + 10f;
+
+        if (_facingArt == Art.Player2)
+        {
+            return new Vector2(_position.X - carriedItemSize.X - 8f, anchorY);
+        }
+
+        return new Vector2(_position.X + _size.X + 8f, anchorY);
     }
 
     private void KeepInsideWorldBounds()

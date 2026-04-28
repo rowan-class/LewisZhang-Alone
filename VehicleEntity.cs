@@ -13,9 +13,16 @@ public class VehicleEntity : SpriteEntity
     // They are in vehicle-local coordinates.
     private readonly Rectangle[] _interiorCollisionLocalRectangles =
     {
+        // 一层：
         new Rectangle(90, 420, 820, 24),
-        new Rectangle(610, 280, 220, 20),
-        new Rectangle(350, 180, 170, 20),
+        // 二层：
+        new Rectangle(90, 310, 330, 16),
+        new Rectangle(90+420, 310, 330, 16),
+
+        new Rectangle(90, 210, 820, 16),
+
+        new Rectangle(90, 100, 820, 16),
+
         new Rectangle(90, 110, 20, 180),
         new Rectangle(910, 110, 20, 320),
     };

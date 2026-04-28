@@ -303,7 +303,7 @@ public class LevelScene : Scene
 
     private void DropCarriedFuelBarrel()
     {
-        Vector2 worldDropPosition = _player.GetCarryAnchor();
+        Vector2 worldDropPosition = _player.GetCarryAnchor(WorldConfig.FuelBarrelSize);
         PositionSpace targetSpace = IsPlayerInsideVehicle(_player) ? PositionSpace.Vehicle : PositionSpace.World;
         Vector2 targetLocalPosition = WorldToLocal(targetSpace, worldDropPosition);
 
