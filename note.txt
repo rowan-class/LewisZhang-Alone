@@ -1,0 +1,30 @@
+FINAL ASSIGNMENT:
+CREATE A SMALL GAME
+DESCRIPTION
+A 2D side-scrolling game where the player controls a small character inside a large mechanical vehicle. The vehicle acts as a moving structure with multiple internal systems that must be managed to keep it running. The player must move through different parts of the machine to operate controls, manage resources, repair breakdowns, and occasionally exit the vehicle to interact with the environment while traveling through a dangerous world.
+PROJECT REQUIREMENTS
+Grade C
+•	A player character that can move and jump.
+•	A large vehicle that moves when powered.
+•	The player can move around on and inside the vehicle, and exit it to interact with the environment (e.g., collecting fuel).
+•	At least two interactable systems (e.g., engine and fuel control).
+•	A basic resource system (e.g., fuel or damage) using a data structure.
+Grade B
+•	Load game or level data using serialization/deserialization.
+•	A save/load system for the game state.
+•	A repair system when parts of the vehicle break.
+•	A UI displaying vehicle status (fuel, damage, etc.) or animation that indicates the status
+•	Different environmental conditions that affect the vehicle (e.g., storms damaging parts, wind enabling alternative movement like sails, fire hazards requiring player response).
+•	A simple terrain system and background.
+Grade A
+•	At least three vehicle systems to manage.
+•	Multiple failure conditions (e.g., running out of fuel, excessive damage).
+•	A start screen and game over screen.
+•	The vehicle gradually gains new components (e.g., automatic fuel collectors, sails), increasing gameplay complexity and introducing new strategies over time.
+•	Basic animations for different parts of the vehicle.
+Grade S
+•	Random or semi-random events during gameplay.
+•	A more complex terrain system.
+•	Fully illustrated/art-designed backgrounds.
+•	Additional visual polish such as moving mechanical parts and effects.
+•	A complete story integrated into the game.
