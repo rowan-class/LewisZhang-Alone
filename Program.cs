@@ -1,2 +1,2 @@
-﻿using var game = new LewisZhang_Assignment4.Game1();
+﻿using var game = new LewisZhang_Alone.Game1();
 game.Run();
