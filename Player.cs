@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 
 namespace LewisZhang_Alone;
@@ -6,144 +7,123 @@ public enum PlayerState
 {
     Grounded,
     Jumping,
-    Falling,
+    Falling
 }
 
 public class Player : PhysicsEntity
 {
-    protected float speed = 2.5f;
-    protected float jumpPower = 10f;
-    protected PlayerState state;
+    private const float GroundMoveSpeed = 320f;
+    private const float AirMoveSpeed = 250f;
+    private const float JumpSpeed = 720f;
 
-    public PlayerState CurrentState => state;
-    public float CurrentConfiguredSpeed => speed;
-
-    private float _groundSpeed = 2.5f;
-    private float _airSpeed = 2f;
     private Art _facingArt = Art.Player1;
+    private PlayerState _state = PlayerState.Falling;
 
-    private bool wantsToJump = false;
-    private Vector2 desiredDirection = Vector2.Zero;
+    public PlayerState CurrentState => _state;
+    public float CurrentConfiguredSpeed => isGrounded ? GroundMoveSpeed : AirMoveSpeed;
 
-    public Player(Art art, Vector2 position) : base(art, position)
+    public Player(Vector2 position)
+        : base(Art.Player1, position, WorldConfig.PlayerSize)
     {
-        ApplyDefaultMovement();
-        ChangeState(PlayerState.Falling);
     }
 
     public override void Update(GameTime gameTime)
     {
-        wantsToJump = false;
-        desiredDirection = Vector2.Zero;
-        acceleration = Vector2.Zero;
-
-        HandleInput();
-        UpdateStateFromMovement();
-
-        if (wantsToJump && isGrounded)
+        if (_scene is not LevelScene levelScene)
         {
-            velocity.Y = -jumpPower;
-            isGrounded = false;
-            ChangeState(PlayerState.Jumping);
-        }
-
-        if (desiredDirection.X != 0)
-        {
-            UpdateFacingSprite();
-            acceleration.X += desiredDirection.X * speed;
-        }
-
-        base.Update(gameTime);
-        KeepInsideHorizontalScreenBounds();
-        UpdateStateFromMovement();
-    }
-
-    private void ApplyDefaultMovement()
-    {
-        jumpPower = 10f;
-        _groundSpeed = 2.5f;
-        _airSpeed = 2f;
-        SetPhysicsTuning(
-            newFriction: 0.85f,
-            newMaxSpeedX: 5f,
-            newMaxRiseSpeed: 50f,
-            newMaxFallSpeed: 50f,
-            newGravity: new Vector2(0f, 1f));
-    }
-
-    private void UpdateStateFromMovement()
-    {
-        if (isGrounded)
-        {
-            ChangeState(PlayerState.Grounded);
             return;
         }
 
-        if (velocity.Y < 0)
+        float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        float movementInput = 0f;
+
+        if (ServiceLocator.Input.IsActionDown(Action.MoveRight))
         {
-            ChangeState(PlayerState.Jumping);
-            return;
+            movementInput += 1f;
         }
 
-        ChangeState(PlayerState.Falling);
-    }
+        if (ServiceLocator.Input.IsActionDown(Action.MoveLeft))
+        {
+            movementInput -= 1f;
+        }
 
-    private void UpdateFacingSprite()
-    {
-        if (desiredDirection.X > 0)
+        if (movementInput > 0f)
         {
             _facingArt = Art.Player1;
         }
-        else if (desiredDirection.X < 0)
+        else if (movementInput < 0f)
         {
             _facingArt = Art.Player2;
         }
 
         _texture = AssetManager.GetTexture(_facingArt);
+
+        if (!levelScene.IsPlayerAttachedToVehicle(this))
+        {
+            _position.X -= levelScene.VehicleSpeed * dt;
+        }
+
+        velocity.X = movementInput * (isGrounded ? GroundMoveSpeed : AirMoveSpeed);
+
+        if (ServiceLocator.Input.IsActionPressed(Action.Jump) && isGrounded)
+        {
+            velocity.Y = -JumpSpeed;
+            isGrounded = false;
+        }
+
+        SimulatePhysics(dt);
+        KeepInsideWorldBounds();
+        UpdateState();
     }
 
-    private void KeepInsideHorizontalScreenBounds()
+    protected override IEnumerable<Rectangle> GetSolidRectangles()
     {
-        if (_texture == null)
+        if (_scene is LevelScene levelScene)
         {
-            return;
+            return levelScene.GetSolidRectangles();
         }
 
-        float maxX = Game1.ScreenSize.X - _texture.Width;
-        _position.X = MathHelper.Clamp(_position.X, 0f, maxX);
+        return System.Array.Empty<Rectangle>();
     }
 
-    private void HandleInput()
+    public Vector2 GetCarryAnchor()
     {
-        if (ServiceLocator.Input.IsActionPressed(Action.Jump))
+        return new Vector2(_position.X + _size.X + 8f, _position.Y + 10f);
+    }
+
+    private void KeepInsideWorldBounds()
+    {
+        if (_position.X < 0f)
         {
-            wantsToJump = true;
+            _position.X = 0f;
         }
 
-        if (ServiceLocator.Input.IsActionDown(Action.MoveRight))
+        float maxX = WorldConfig.WorldWidth - _size.X;
+        if (_position.X > maxX)
         {
-            desiredDirection.X += 1;
+            _position.X = maxX;
         }
 
-        if (ServiceLocator.Input.IsActionDown(Action.MoveLeft))
+        if (_position.Y < 0f)
         {
-            desiredDirection.X -= 1;
+            _position.Y = 0f;
+            velocity.Y = 0f;
         }
     }
 
-    private void ChangeState(PlayerState newState)
+    private void UpdateState()
     {
-        state = newState;
-
-        switch (state)
+        if (isGrounded)
         {
-            case PlayerState.Grounded:
-                speed = _groundSpeed;
-                break;
-            case PlayerState.Jumping:
-            case PlayerState.Falling:
-                speed = _airSpeed;
-                break;
+            _state = PlayerState.Grounded;
+        }
+        else if (velocity.Y < 0f)
+        {
+            _state = PlayerState.Jumping;
+        }
+        else
+        {
+            _state = PlayerState.Falling;
         }
     }
 }

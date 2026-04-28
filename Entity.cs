@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -5,54 +6,51 @@ namespace LewisZhang_Alone;
 
 public class Entity
 {
-    protected Texture2D _texture;
     protected Vector2 _position;
-    protected Vector2 _velocity;
-    protected Point _rectOffset = new Point(6, 6);
-    protected Rectangle _rect;
+    protected Point _size;
     protected bool _isActive = true;
     protected Scene _scene;
 
     public Vector2 Position => _position;
+    public Point Size => _size;
     public bool IsActive => _isActive;
     public Scene Scene => _scene;
 
-    public Entity(Texture2D texture, Vector2 position)
+    public Entity(Vector2 position, Point size)
     {
-        _texture = texture;
         _position = position;
-        _velocity = Vector2.Zero;
-        UpdateRect();
+        _size = size;
     }
 
     public virtual void Update(GameTime gameTime)
     {
-        Vector2 velocity = _velocity;
-        if (_scene != null)
-        {
-            velocity = _scene.CheckForGridCollision(this, velocity);
-        }
-        _position += velocity;
-        UpdateRect();
     }
 
     public virtual void Draw(SpriteBatch spriteBatch)
     {
-        if (_isActive && _texture != null)
-        {
-            spriteBatch.Draw(_texture, _position, Color.White);
-        }
     }
 
     public virtual Rectangle GetBounds()
     {
-        if (_texture == null)
+        if (_size.X <= 0 || _size.Y <= 0)
         {
             return Rectangle.Empty;
         }
 
-        UpdateRect();
-        return _rect;
+        return new Rectangle(
+            (int)System.MathF.Round(_position.X),
+            (int)System.MathF.Round(_position.Y),
+            _size.X,
+            _size.Y);
+    }
+
+    public virtual IEnumerable<Rectangle> GetDebugRectangles()
+    {
+        Rectangle bounds = GetBounds();
+        if (bounds != Rectangle.Empty)
+        {
+            yield return bounds;
+        }
     }
 
     public void Deactivate()
@@ -62,7 +60,6 @@ public class Entity
 
     public virtual void RemoveFromScene(Scene scene)
     {
-        // Hook for derived entities to clean up when removed.
     }
 
     internal void SetScene(Scene scene)
@@ -75,26 +72,8 @@ public class Entity
         return _isActive && other._isActive && GetBounds().Intersects(other.GetBounds());
     }
 
-    public void Translate(Vector2 translation)
+    public void SetPosition(Vector2 position)
     {
-        _position.X += translation.X;
-        _position.Y += translation.Y;
-        UpdateRect();
-    }
-
-    protected virtual void UpdateRect()
-    {
-        if (_texture == null)
-        {
-            _rect = Rectangle.Empty;
-            return;
-        }
-
-        _rect = new Rectangle(
-            (int)_position.X + _rectOffset.X,
-            (int)_position.Y + _rectOffset.Y,
-            Grid.TileSize - _rectOffset.X * 2,
-            Grid.TileSize - _rectOffset.Y
-        );
+        _position = position;
     }
 }

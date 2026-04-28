@@ -1,8 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.IO;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
 namespace LewisZhang_Alone;
@@ -11,17 +7,33 @@ public enum Action
 {
     MoveLeft,
     MoveRight,
-    Jump
+    Jump,
+    StartGame,
+    ExitGame,
+    ToggleDebug,
+    ToggleVehiclePower,
+    ToggleCameraView,
+    Interact,
+    DebugSpeedDecrease,
+    DebugSpeedIncrease
 }
 
 public class Input
 {
-    private static Dictionary<Action, List<Keys>> actionKeys =
+    private static readonly Dictionary<Action, List<Keys>> actionKeys =
         new Dictionary<Action, List<Keys>>()
         {
             { Action.MoveLeft,  new List<Keys> { Keys.Left, Keys.A } },
             { Action.MoveRight, new List<Keys> { Keys.Right, Keys.D } },
-            { Action.Jump,      new List<Keys> { Keys.Space } }
+            { Action.Jump,      new List<Keys> { Keys.Space, Keys.W, Keys.Up } },
+            { Action.StartGame, new List<Keys> { Keys.Enter } },
+            { Action.ExitGame, new List<Keys> { Keys.Escape } },
+            { Action.ToggleDebug, new List<Keys> { Keys.F3 } },
+            { Action.ToggleVehiclePower, new List<Keys> { Keys.E } },
+            { Action.ToggleCameraView, new List<Keys> { Keys.LeftShift, Keys.RightShift } },
+            { Action.Interact, new List<Keys> { Keys.G } },
+            { Action.DebugSpeedDecrease, new List<Keys> { Keys.OemOpenBrackets } },
+            { Action.DebugSpeedIncrease, new List<Keys> { Keys.OemCloseBrackets } }
         };
 
     private KeyboardState currentState;

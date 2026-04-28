@@ -1,18 +1,16 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-
 
 namespace LewisZhang_Alone;
 
 public enum Art
 {
-    Player,
     Player1,
     Player2,
+    Vehicle,
+    Background,
     Button,
     pixel
 }
@@ -28,7 +26,8 @@ public static class AssetManager
 
         textures[Art.Player1] = content.Load<Texture2D>("player1");
         textures[Art.Player2] = content.Load<Texture2D>("player2");
-        textures[Art.Player] = textures[Art.Player1];
+        textures[Art.Vehicle] = content.Load<Texture2D>("Vehicle");
+        textures[Art.Background] = content.Load<Texture2D>("background");
         textures[Art.Button] = CreateSolidTexture(graphicsDevice, 120, 40, Color.LightGray);
         textures[Art.pixel] = CreateSolidTexture(graphicsDevice, 1, 1, Color.White);
         ArialFont = content.Load<SpriteFont>("Arial");
@@ -39,7 +38,10 @@ public static class AssetManager
         Texture2D texture = new(graphicsDevice, width, height);
         Color[] data = new Color[width * height];
         for (int i = 0; i < data.Length; i++)
+        {
             data[i] = color;
+        }
+
         texture.SetData(data);
         return texture;
     }

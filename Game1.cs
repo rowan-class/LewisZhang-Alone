@@ -9,11 +9,11 @@ namespace LewisZhang_Alone;
 public class Game1 : Game
 {
     // Default debug state. Press F3 in-game to toggle collision bounds.
-    public static bool Debug = true;
+    public static bool Debug = false;
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _entityBatch;
 
-    public static Vector2 ScreenSize = new Vector2(1280, 720);
+    public static Vector2 ScreenSize = WorldConfig.ScreenSize;
 
     private Dictionary<string, Func<Scene>> _sceneFactories;
     private Scene _currentScene;
@@ -31,15 +31,13 @@ public class Game1 : Game
     protected override void Initialize()
     {
         ServiceLocator.Game1 = this;
-        ServiceLocator.GameState = new GameState();
-        // setup input service
         ServiceLocator.Input = new Input();
         AssetManager.LoadContent(Content, GraphicsDevice);
 
         _sceneFactories = new Dictionary<string, Func<Scene>>
         {
             ["start"] = () => new StartScene(),
-            ["level1"] = () => new LevelScene("level1", "level1"),
+            ["level1"] = () => new LevelScene(),
         };
 
         _currentScene = _sceneFactories["start"]();
@@ -51,22 +49,22 @@ public class Game1 : Game
     protected override void LoadContent()
     {
         _entityBatch = new SpriteBatch(GraphicsDevice);
-
-        // TODO: use this.Content to load your game content here
     }
-     
+
     protected override void Update(GameTime gameTime)
     {
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-            Exit();
-
         ServiceLocator.Input.Update();
 
-        if (ServiceLocator.Input.IsKeyPressed(Keys.F3))
+        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || ServiceLocator.Input.IsActionDown(Action.ExitGame))
+        {
+            Exit();
+        }
+
+        if (ServiceLocator.Input.IsActionPressed(Action.ToggleDebug))
         {
             Debug = !Debug;
         }
-        
+
         _currentScene.Update(gameTime);
 
         if (_currentScene.finished)
@@ -86,14 +84,7 @@ public class Game1 : Game
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(Color.CornflowerBlue);
-
-        // TODO: Add your drawing code here
-        _entityBatch.Begin();
-
         _currentScene.Draw(_entityBatch);
-
-        _entityBatch.End();
-
         base.Draw(gameTime);
     }
 }

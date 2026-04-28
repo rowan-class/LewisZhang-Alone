@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -6,22 +5,29 @@ namespace LewisZhang_Alone;
 
 public class SpriteEntity : Entity
 {
-    protected new Rectangle _rect;
+    protected Texture2D _texture;
     protected Art _art;
+    protected Color _tint = Color.White;
 
-    public SpriteEntity(Art art, Vector2 position) : base(AssetManager.GetTexture(art), position)
+    public SpriteEntity(Art art, Vector2 position, Point? size = null)
+        : base(position, size ?? Point.Zero)
     {
         _art = art;
-        if (_texture != null)
+        _texture = AssetManager.GetTexture(art);
+
+        if (_size == Point.Zero && _texture != null)
         {
-            _rect = new Rectangle((int)position.X, (int)position.Y, _texture.Width, _texture.Height);
+            _size = new Point(_texture.Width, _texture.Height);
         }
     }
 
-    public override void Update(GameTime gameTime)
+    public override void Draw(SpriteBatch spriteBatch)
     {
-        base.Update(gameTime);
-        _rect.X = (int)_position.X;
-        _rect.Y = (int)_position.Y;
+        if (!_isActive || _texture == null)
+        {
+            return;
+        }
+
+        spriteBatch.Draw(_texture, GetBounds(), _tint);
     }
 }

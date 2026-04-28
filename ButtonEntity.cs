@@ -1,5 +1,3 @@
-using System;
-using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -10,63 +8,52 @@ public class ButtonEntity : SpriteEntity
 {
     private readonly string _buttonText;
     private readonly string _nextSceneKey;
-    private bool hovered;
+    private bool _hovered;
 
-    public ButtonEntity(Art art, Vector2 position) : this(art, position, "Start", "level1")
+    public ButtonEntity(Art art, Vector2 position)
+        : this(art, position, "Start", "level1")
     {
     }
 
-    public ButtonEntity(Art art, Vector2 position, string buttonText, string nextSceneKey) : base(art, position)
+    public ButtonEntity(Art art, Vector2 position, string buttonText, string nextSceneKey)
+        : base(art, position)
     {
         _buttonText = buttonText;
         _nextSceneKey = nextSceneKey;
 
         Vector2 stringDisplaySize = AssetManager.ArialFont.MeasureString(_buttonText);
-        _rect.Width = Math.Max(200, (int)stringDisplaySize.X + 20);
-        _rect.Height = Math.Max(60, (int)stringDisplaySize.Y + 20);
-        _rect.X = (int)position.X;
-        _rect.Y = (int)position.Y;
+        _size = new Point(
+            System.Math.Max(200, (int)stringDisplaySize.X + 20),
+            System.Math.Max(60, (int)stringDisplaySize.Y + 20));
     }
 
     public override void Update(GameTime gameTime)
     {
-        hovered = false;
-        _rect.X = (int)_position.X;
-        _rect.Y = (int)_position.Y;
+        _hovered = false;
+
         MouseState mouseState = Mouse.GetState();
-        Vector2 mouse_pos = new Vector2(mouseState.X, mouseState.Y);
-        if (_rect.Contains(mouse_pos))
+        Vector2 mousePosition = new Vector2(mouseState.X, mouseState.Y);
+        if (GetBounds().Contains(mousePosition))
         {
-            hovered = true;
-        }
-        if (hovered)
-        {
-            if (mouseState.LeftButton == ButtonState.Pressed)
-            {
-                // Debug.WriteLine("Button Clicked!");
-                _scene.ChangeScene(_nextSceneKey);
-            }
+            _hovered = true;
         }
 
-    }
-
-    public override Rectangle GetBounds()
-    {
-        _rect.X = (int)_position.X;
-        _rect.Y = (int)_position.Y;
-        return _rect;
+        if (_hovered && mouseState.LeftButton == ButtonState.Pressed)
+        {
+            _scene.ChangeScene(_nextSceneKey);
+        }
     }
 
     public override void Draw(SpriteBatch spriteBatch)
     {
-        Color button_color = hovered ? Color.LightGray : Color.White;
-        Rectangle buttonRect = new Rectangle((int)_position.X, (int)_position.Y, _rect.Width, _rect.Height);
+        Rectangle buttonRect = GetBounds();
         Vector2 textSize = AssetManager.ArialFont.MeasureString(_buttonText);
         Vector2 textPosition = new Vector2(
             buttonRect.X + (buttonRect.Width - textSize.X) / 2f,
             buttonRect.Y + (buttonRect.Height - textSize.Y) / 2f);
 
-        spriteBatch.Draw(AssetManager.GetTexture(Art.Button), buttonRect, button_color);
+        Color buttonColor = _hovered ? Color.LightGray : Color.White;
+        spriteBatch.Draw(AssetManager.GetTexture(Art.Button), buttonRect, buttonColor);
         spriteBatch.DrawString(AssetManager.ArialFont, _buttonText, textPosition, Color.Black);
     }
 }

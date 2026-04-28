@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -14,8 +13,10 @@ public class TextEntity : Entity
 {
     protected string _text;
     private readonly TextAlignment _alignment;
+    private Color _color = Color.White;
 
-    public TextEntity(Vector2 position, string text, TextAlignment alignment = TextAlignment.TopLeft) : base(null, position)
+    public TextEntity(Vector2 position, string text, TextAlignment alignment = TextAlignment.TopLeft)
+        : base(position, Point.Zero)
     {
         _text = text;
         _alignment = alignment;
@@ -30,11 +31,26 @@ public class TextEntity : Entity
             drawPosition.X -= textSize.X / 2f;
         }
 
-        spriteBatch.DrawString(AssetManager.ArialFont, _text, drawPosition, Color.White);
+        spriteBatch.DrawString(AssetManager.ArialFont, _text, drawPosition, _color);
     }
 
-    public void SetText(string new_text)
+    public override Rectangle GetBounds()
     {
-        _text = new_text;
+        return Rectangle.Empty;
+    }
+
+    public override System.Collections.Generic.IEnumerable<Rectangle> GetDebugRectangles()
+    {
+        yield break;
+    }
+
+    public void SetText(string newText)
+    {
+        _text = newText;
+    }
+
+    public void SetColor(Color color)
+    {
+        _color = color;
     }
 }
