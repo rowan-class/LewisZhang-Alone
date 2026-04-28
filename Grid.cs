@@ -87,8 +87,7 @@ public enum TileType
 {
     Empty,
     Wall,
-    Floor,
-    Exit
+    Floor
 }
 
 public class Tile
@@ -97,23 +96,20 @@ public class Tile
     {
         {TileType.Empty, new Color(8, 9, 0, 0)},
         {TileType.Floor, Color.SaddleBrown},
-        {TileType.Wall, Color.Black},
-        {TileType.Exit, Color.Yellow}
+        {TileType.Wall, Color.Black}
     };
 
     public static Dictionary<TileType, bool> tileSolid = new Dictionary<TileType, bool>()
     {
         {TileType.Empty, false},
         {TileType.Floor, false},
-        {TileType.Wall, true},
-        {TileType.Exit, false}
+        {TileType.Wall, true}
     };
 
     public static Dictionary<char, TileType> tileSymbols = new Dictionary<char, TileType>()
     {
         {'_', TileType.Floor},
-        {'#', TileType.Wall},
-        {'X', TileType.Exit}
+        {'#', TileType.Wall}
     };
 
     protected Point _gridPosition;

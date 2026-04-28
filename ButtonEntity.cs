@@ -31,6 +31,8 @@ public class ButtonEntity : SpriteEntity
     public override void Update(GameTime gameTime)
     {
         hovered = false;
+        _rect.X = (int)_position.X;
+        _rect.Y = (int)_position.Y;
         MouseState mouseState = Mouse.GetState();
         Vector2 mouse_pos = new Vector2(mouseState.X, mouseState.Y);
         if (_rect.Contains(mouse_pos))
@@ -48,10 +50,23 @@ public class ButtonEntity : SpriteEntity
 
     }
 
+    public override Rectangle GetBounds()
+    {
+        _rect.X = (int)_position.X;
+        _rect.Y = (int)_position.Y;
+        return _rect;
+    }
+
     public override void Draw(SpriteBatch spriteBatch)
     {
         Color button_color = hovered ? Color.LightGray : Color.White;
-        spriteBatch.Draw(AssetManager.GetTexture(Art.Button), new Rectangle((int)_position.X, (int)_position.Y, _rect.Width, _rect.Height), button_color);
-        spriteBatch.DrawString(AssetManager.ArialFont, _buttonText, _position + new Vector2(10, 10), Color.Black);
+        Rectangle buttonRect = new Rectangle((int)_position.X, (int)_position.Y, _rect.Width, _rect.Height);
+        Vector2 textSize = AssetManager.ArialFont.MeasureString(_buttonText);
+        Vector2 textPosition = new Vector2(
+            buttonRect.X + (buttonRect.Width - textSize.X) / 2f,
+            buttonRect.Y + (buttonRect.Height - textSize.Y) / 2f);
+
+        spriteBatch.Draw(AssetManager.GetTexture(Art.Button), buttonRect, button_color);
+        spriteBatch.DrawString(AssetManager.ArialFont, _buttonText, textPosition, Color.Black);
     }
 }

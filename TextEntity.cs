@@ -4,18 +4,33 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace LewisZhang_Alone;
 
+public enum TextAlignment
+{
+    TopLeft,
+    TopCenter
+}
+
 public class TextEntity : Entity
 {
     protected string _text;
+    private readonly TextAlignment _alignment;
 
-    public TextEntity(Vector2 position, string text) : base(null, position)
+    public TextEntity(Vector2 position, string text, TextAlignment alignment = TextAlignment.TopLeft) : base(null, position)
     {
         _text = text;
+        _alignment = alignment;
     }
 
     public override void Draw(SpriteBatch spriteBatch)
     {
-        spriteBatch.DrawString(AssetManager.ArialFont, _text, _position, Color.White);
+        Vector2 drawPosition = _position;
+        if (_alignment == TextAlignment.TopCenter)
+        {
+            Vector2 textSize = AssetManager.ArialFont.MeasureString(_text);
+            drawPosition.X -= textSize.X / 2f;
+        }
+
+        spriteBatch.DrawString(AssetManager.ArialFont, _text, drawPosition, Color.White);
     }
 
     public void SetText(string new_text)

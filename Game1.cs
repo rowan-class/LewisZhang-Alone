@@ -8,11 +8,12 @@ namespace LewisZhang_Alone;
 
 public class Game1 : Game
 {
-    public static bool Debug = false;
+    // Default debug state. Press F3 in-game to toggle collision bounds.
+    public static bool Debug = true;
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _entityBatch;
 
-    public static Vector2 ScreenSize = new Vector2(1280, 768);
+    public static Vector2 ScreenSize = new Vector2(1280, 720);
 
     private Dictionary<string, Func<Scene>> _sceneFactories;
     private Scene _currentScene;
@@ -38,10 +39,7 @@ public class Game1 : Game
         _sceneFactories = new Dictionary<string, Func<Scene>>
         {
             ["start"] = () => new StartScene(),
-            ["level_select"] = () => new LevelSelectScene(),
-            ["level1"] = () => new LevelScene("level1", "level1", "level2"),
-            ["level2"] = () => new LevelScene("level2", "level2", "end"),
-            ["end"] = () => new EndScene(),
+            ["level1"] = () => new LevelScene("level1", "level1"),
         };
 
         _currentScene = _sceneFactories["start"]();
@@ -63,6 +61,11 @@ public class Game1 : Game
             Exit();
 
         ServiceLocator.Input.Update();
+
+        if (ServiceLocator.Input.IsKeyPressed(Keys.F3))
+        {
+            Debug = !Debug;
+        }
         
         _currentScene.Update(gameTime);
 

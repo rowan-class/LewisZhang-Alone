@@ -13,12 +13,8 @@ public enum Art
     Player,
     Player1,
     Player2,
-    Spike,
-    Alien,
     Button,
-    pixel, 
-    Enemy1, 
-    Enemy2
+    pixel
 }
 
 public static class AssetManager
@@ -33,12 +29,8 @@ public static class AssetManager
         textures[Art.Player1] = content.Load<Texture2D>("player1");
         textures[Art.Player2] = content.Load<Texture2D>("player2");
         textures[Art.Player] = textures[Art.Player1];
-        textures[Art.Spike] = content.Load<Texture2D>("spike");
-        textures[Art.Alien] = content.Load<Texture2D>("alien");
         textures[Art.Button] = CreateSolidTexture(graphicsDevice, 120, 40, Color.LightGray);
         textures[Art.pixel] = CreateSolidTexture(graphicsDevice, 1, 1, Color.White);
-        textures[Art.Enemy1] = CreateSolidTexture(graphicsDevice, 64, 64, Color.Green);
-        textures[Art.Enemy2] = CreateSolidTexture(graphicsDevice, 64, 64, Color.Red);
         ArialFont = content.Load<SpriteFont>("Arial");
     }
 

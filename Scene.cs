@@ -84,18 +84,6 @@ public class Scene
             case "player":
                 AddEntity(new Player(Art.Player, pixelPosition));
                 return true;
-            case "enemy":
-                AddEntity(new EnemyEntity(pixelPosition));
-                return true;
-            case "enemy2":
-                AddEntity(new Enemy2Entity(pixelPosition));
-                return true;
-            case "A":
-                AddEntity(new Enemy2Entity(pixelPosition));
-                return true;
-            case "^":
-                AddEntity(new SpikeEntity(pixelPosition));
-                return true;
         }
 
         return false;
@@ -161,6 +149,28 @@ public class Scene
         {
             entity.Draw(spriteBatch);
         }
+
+        if (Game1.Debug)
+        {
+            foreach (Entity entity in _entities)
+            {
+                DrawDebugBounds(spriteBatch, entity.GetBounds(), Color.Red);
+            }
+        }
+    }
+
+    private void DrawDebugBounds(SpriteBatch spriteBatch, Rectangle bounds, Color color)
+    {
+        if (bounds == Rectangle.Empty || bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return;
+        }
+
+        Texture2D pixel = AssetManager.GetTexture(Art.pixel);
+        spriteBatch.Draw(pixel, new Rectangle(bounds.Left, bounds.Top, bounds.Width, 1), color);
+        spriteBatch.Draw(pixel, new Rectangle(bounds.Left, bounds.Bottom - 1, bounds.Width, 1), color);
+        spriteBatch.Draw(pixel, new Rectangle(bounds.Left, bounds.Top, 1, bounds.Height), color);
+        spriteBatch.Draw(pixel, new Rectangle(bounds.Right - 1, bounds.Top, 1, bounds.Height), color);
     }
 
     public virtual void Open()

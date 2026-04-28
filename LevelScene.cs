@@ -5,13 +5,11 @@ namespace LewisZhang_Alone;
 public class LevelScene : Scene
 {
     private readonly string _currentSceneKey;
-    private readonly string _nextSceneKey;
     private readonly TextEntity _hpText;
 
-    public LevelScene(string levelName, string currentSceneKey, string nextSceneKey) : base(levelName)
+    public LevelScene(string levelName, string currentSceneKey) : base(levelName)
     {
         _currentSceneKey = currentSceneKey;
-        _nextSceneKey = nextSceneKey;
         _hpText = new TextEntity(new Vector2(10, 10), "");
         AddEntity(_hpText);
     }
@@ -31,25 +29,16 @@ public class LevelScene : Scene
         Player player = FindFirstEntity<Player>();
         if (player == null)
         {
-            _hpText.SetText("HP: " + hp + "   Tuning: 1   State: N/A   Speed: 0.00" +"\nDefault = 1,\nFloaty = 2,\nHeavy = 3");
+            _hpText.SetText("HP: " + hp + "   State: N/A   Speed: 0.00");
             return;
         }
 
-        _hpText.SetText("HP: " + hp + "   Tuning: " + player.ActiveTuningNumber + "   State: " + player.CurrentState + "   Speed: " + player.CurrentConfiguredSpeed.ToString("0.00") +"\nDefault = 1,\nFloaty = 2,\nHeavy = 3");
+        _hpText.SetText("HP: " + hp + "   State: " + player.CurrentState + "   Speed: " + player.CurrentConfiguredSpeed.ToString("0.00"));
 
         Rectangle playerBounds = player.GetBounds();
         if (playerBounds.Top > Game1.ScreenSize.Y)
         {
             ChangeScene(_currentSceneKey);
-            return;
-        }
-
-        Rectangle bounds = playerBounds;
-        Vector2 center = new Vector2(bounds.Center.X, bounds.Center.Y);
-        Tile tile = Grid.GetTile(center);
-        if (tile != null && tile.Type == TileType.Exit)
-        {
-            ChangeScene(_nextSceneKey);
         }
     }
 
