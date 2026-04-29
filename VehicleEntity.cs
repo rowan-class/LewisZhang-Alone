@@ -7,7 +7,6 @@ public class VehicleEntity : SpriteEntity
 {
     private const float PoweredAcceleration = 180f;
     private const float CoastDeceleration = 120f;
-    private const float MaxSpeed = 260f;
 
     // Edit these rectangles later to hand-author interior floors, walls, and shelves.
     // They are in vehicle-local coordinates.
@@ -44,7 +43,7 @@ public class VehicleEntity : SpriteEntity
 
         if (Powered)
         {
-            _speed = System.MathF.Min(MaxSpeed, _speed + PoweredAcceleration * dt);
+            _speed = System.MathF.Min(WorldConfig.VehicleMaxSpeed, _speed + PoweredAcceleration * dt);
         }
         else
         {
@@ -59,7 +58,7 @@ public class VehicleEntity : SpriteEntity
 
     public void AdjustSpeed(float delta)
     {
-        _speed = System.Math.Clamp(_speed + delta, 0f, MaxSpeed);
+        _speed = System.Math.Clamp(_speed + delta, 0f, WorldConfig.VehicleMaxSpeed);
     }
 
     public bool IsInsideCabin(Rectangle playerBounds)

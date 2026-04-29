@@ -65,9 +65,10 @@ public class LevelScene : Scene
         _player.Update(gameTime);
         HandleFuelBarrelInteraction();
         UpdateCameraMode();
+        _camera.Update(gameTime, _vehicle.Speed);
         CleanupFuelBarrels();
 
-        if (_player.GetBounds().Top > WorldConfig.WorldHeight + 200 || _player.GetBounds().Right < -200)
+        if (_player.GetBounds().Top > WorldConfig.OverviewViewBounds.Bottom + 200 || _player.GetBounds().Right < WorldConfig.OverviewViewBounds.Left - 200)
         {
             ChangeScene("level1");
         }
@@ -78,14 +79,15 @@ public class LevelScene : Scene
         spriteBatch.Begin(transformMatrix: _camera.GetViewMatrix(), samplerState: SamplerState.PointClamp);
         DrawBackground(spriteBatch);
         _ground.Draw(spriteBatch);
-        DrawFuelBarrels(spriteBatch, carriedOnly: false);
         _vehicle.Draw(spriteBatch);
-        _player.Draw(spriteBatch);
+        DrawFuelBarrels(spriteBatch, carriedOnly: false);
         DrawFuelBarrels(spriteBatch, carriedOnly: true);
+        _player.Draw(spriteBatch);
 
         if (Game1.Debug)
         {
             DrawDebugRectangles(spriteBatch, GetDebugRectangles());
+            DrawDebugRectangle(spriteBatch, _vehicle.CabinBoundsWorld, Color.LimeGreen);
         }
 
         spriteBatch.End();
@@ -132,7 +134,7 @@ public class LevelScene : Scene
 
     public bool IsPlayerAttachedToVehicle(Player player)
     {
-        return _vehicle.GetBounds().Intersects(player.GetBounds());
+        return IsPlayerInsideVehicle(player);
     }
 
     protected override IEnumerable<Rectangle> GetDebugRectangles()
@@ -187,9 +189,11 @@ public class LevelScene : Scene
     {
         Texture2D background = AssetManager.GetTexture(Art.Background);
         float wrappedOffset = _worldScrollX % background.Width;
+        Rectangle firstBackground = new(-(int)wrappedOffset, 0, background.Width, WorldConfig.WorldHeight);
+        Rectangle secondBackground = new(-(int)wrappedOffset + background.Width, 0, background.Width, WorldConfig.WorldHeight);
 
-        spriteBatch.Draw(background, new Vector2(-wrappedOffset, 0f), Color.White);
-        spriteBatch.Draw(background, new Vector2(-wrappedOffset + background.Width, 0f), Color.White);
+        spriteBatch.Draw(background, firstBackground, Color.White);
+        spriteBatch.Draw(background, secondBackground, Color.White);
     }
 
     private void DrawHud(SpriteBatch spriteBatch)

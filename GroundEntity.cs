@@ -5,8 +5,6 @@ namespace LewisZhang_Alone;
 
 public class GroundEntity : SpaceEntity
 {
-    private static readonly Color GroundColor = new(60, 60, 60);
-
     public GroundEntity()
         : base(
             PositionSpace.World,
@@ -17,6 +15,5 @@ public class GroundEntity : SpaceEntity
 
     public override void Draw(SpriteBatch spriteBatch)
     {
-        spriteBatch.Draw(AssetManager.GetTexture(Art.pixel), GetBounds(), GroundColor);
     }
 }

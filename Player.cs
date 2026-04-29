@@ -100,20 +100,20 @@ public class Player : PhysicsEntity
 
     private void KeepInsideWorldBounds()
     {
-        if (_position.X < 0f)
+        if (_position.X < WorldConfig.OverviewViewBounds.Left)
         {
-            _position.X = 0f;
+            _position.X = WorldConfig.OverviewViewBounds.Left;
         }
 
-        float maxX = WorldConfig.WorldWidth - _size.X;
+        float maxX = WorldConfig.OverviewViewBounds.Right - _size.X;
         if (_position.X > maxX)
         {
             _position.X = maxX;
         }
 
-        if (_position.Y < 0f)
+        if (_position.Y < WorldConfig.OverviewViewBounds.Top)
         {
-            _position.Y = 0f;
+            _position.Y = WorldConfig.OverviewViewBounds.Top;
             velocity.Y = 0f;
         }
     }
