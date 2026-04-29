@@ -17,12 +17,13 @@ public class VehicleEntity : SpriteEntity
         // 二层：
         new Rectangle(90, 310, 330, 16),
         new Rectangle(90+420, 310, 330, 16),
-
+        // 三层：
         new Rectangle(90, 210, 820, 16),
-
+        // 车顶：
         new Rectangle(90, 100, 820, 16),
-
+        // 左墙壁：
         new Rectangle(90, 110, 20, 180),
+        // 右墙壁：
         new Rectangle(910, 110, 20, 320),
     };
 
