@@ -25,7 +25,9 @@ public static class WorldConfig
     public static readonly Point PlayerSize = new(48, 48);
     public static readonly Point VehicleSize = new(1000, 540);
     public static readonly Point FuelBarrelSize = new(36, 36);
-    public static readonly Point FuelDisplaySize = new(30, 200);
+    public static readonly Point FuelDisplaySize = new(62, 210);
+    public static readonly Point FuelPortSize = new(64, 64);
+    public static readonly Point FuelButtonSize = new(48, 24);
     public static readonly Point ThrottleSize = new(12, 36);
 
     public static readonly Rectangle OverviewViewBounds = new(
@@ -39,8 +41,12 @@ public static class WorldConfig
         OverviewViewBounds.Bottom - VehicleSize.Y - 120f);
 
     public static readonly Vector2 PlayerStartPosition = VehiclePosition + new Vector2(140f, 300f);
-    public static readonly Vector2 FuelDisplayBottomLeftLocal = new(120f, 422f);
+    public static readonly Vector2 FuelDisplayBottomLeftLocal = new(80-10f, 300+20f);
+    public static readonly Vector2 FuelPortTopLeftLocal = new(142f, 262f);
+    public static readonly Vector2 FuelButtonTopLeftLocal = new(300f, 216f);
     public static readonly Vector2 ThrottleIdleTopLeftLocal = new(760f, 168f);
+    public const float FuelButtonPressedDuration = 0.35f;
+    public const float FuelButtonCooldownDuration = 0.65f;
     public const float ThrottleTravelDistance = 48f;
     public const int ThrottleInteractionPadding = 20;
     public static readonly Rectangle CloseViewBounds = new((int)(VehiclePosition.X - 140f), (int)(VehiclePosition.Y - 120f), ScreenWidth, ScreenHeight);

@@ -13,6 +13,8 @@ public class LevelScene : Scene
     private readonly VehicleEntity _vehicle = new();
     private readonly ThrottleEntity _throttle;
     private readonly FuelDisplayEntity _fuelDisplay;
+    private readonly FuelPortEntity _fuelPort;
+    private readonly FuelButtonModuleEntity _fuelButton;
     private readonly Player _player = new(WorldConfig.PlayerStartPosition);
     private readonly GroundEntity _ground = new();
     private readonly List<FuelBarrelEntity> _fuelBarrels = new();
@@ -27,9 +29,13 @@ public class LevelScene : Scene
     {
         _throttle = new ThrottleEntity(_vehicle);
         _fuelDisplay = new FuelDisplayEntity(_vehicle);
+        _fuelPort = new FuelPortEntity();
+        _fuelButton = new FuelButtonModuleEntity(_vehicle, _fuelPort);
         _vehicle.SetScene(this);
         _throttle.SetScene(this);
         _fuelDisplay.SetScene(this);
+        _fuelPort.SetScene(this);
+        _fuelButton.SetScene(this);
         _player.SetScene(this);
         _ground.SetScene(this);
         _ground.Update(new GameTime());
@@ -72,6 +78,8 @@ public class LevelScene : Scene
         _player.Update(gameTime);
         _throttle.Update(gameTime);
         _vehicle.Update(gameTime);
+        _fuelPort.Update(gameTime);
+        _fuelButton.Update(gameTime);
 
         if (Game1.Debug)
         {
@@ -101,6 +109,8 @@ public class LevelScene : Scene
         _vehicle.Draw(spriteBatch);
         _throttle.Draw(spriteBatch);
         _fuelDisplay.Draw(spriteBatch);
+        _fuelPort.Draw(spriteBatch);
+        _fuelButton.Draw(spriteBatch);
         DrawFuelBarrels(spriteBatch, carriedOnly: false);
         DrawFuelBarrels(spriteBatch, carriedOnly: true);
         _player.Draw(spriteBatch);
@@ -176,6 +186,16 @@ public class LevelScene : Scene
         }
 
         foreach (Rectangle rect in _fuelDisplay.GetDebugRectangles())
+        {
+            yield return rect;
+        }
+
+        foreach (Rectangle rect in _fuelPort.GetDebugRectangles())
+        {
+            yield return rect;
+        }
+
+        foreach (Rectangle rect in _fuelButton.GetDebugRectangles())
         {
             yield return rect;
         }
@@ -279,7 +299,8 @@ public class LevelScene : Scene
             PreferOverviewView = _preferOverviewView,
             PlayerPosition = VectorSaveData.FromVector2(_player.Position),
             Vehicle = _vehicle.CaptureSaveData(),
-            Throttle = _throttle.CaptureSaveData()
+            Throttle = _throttle.CaptureSaveData(),
+            FuelPortLit = _fuelPort.IsLit
         };
 
         for (int i = 0; i < _fuelBarrels.Count; i++)
@@ -318,6 +339,7 @@ public class LevelScene : Scene
 
         _vehicle.RestoreSaveData(data.Vehicle);
         _throttle.RestoreSaveData(data.Throttle);
+        _fuelPort.SetLit(data.FuelPortLit);
 
         _fuelBarrels.Clear();
         for (int i = 0; i < data.FuelBarrels.Count; i++)
@@ -370,6 +392,13 @@ public class LevelScene : Scene
 
         if (_carriedFuelBarrel != null)
         {
+            if (_fuelPort.TryInsertBarrel(_player, _carriedFuelBarrel))
+            {
+                _carriedFuelBarrel.Deactivate();
+                _carriedFuelBarrel = null;
+                return;
+            }
+
             DropCarriedFuelBarrel();
             return;
         }

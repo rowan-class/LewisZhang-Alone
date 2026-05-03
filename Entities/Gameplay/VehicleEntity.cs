@@ -8,6 +8,7 @@ public class VehicleEntity : SpriteEntity
     private const float PoweredAcceleration = 100f;
     private const float CoastDeceleration = 120f;
     private const float MaxFuel = 100f;
+    private const float InitialFuel = 20f;
     private const float AcceleratingFuelUsePerSecond = 4f;
     private const float CruisingFuelUsePerSecond = 1.5f;
 
@@ -32,7 +33,7 @@ public class VehicleEntity : SpriteEntity
     };
 
     private float _speed;
-    private float _fuel = MaxFuel;
+    private float _fuel = InitialFuel;
 
     public bool Powered { get; private set; }
     public float Speed => _speed;
@@ -75,6 +76,16 @@ public class VehicleEntity : SpriteEntity
     public void AdjustSpeed(float delta)
     {
         _speed = System.Math.Clamp(_speed + delta, 0f, WorldConfig.VehicleMaxSpeed);
+    }
+
+    public void AddFuelByRatio(float ratio)
+    {
+        if (ratio <= 0f)
+        {
+            return;
+        }
+
+        _fuel = System.Math.Clamp(_fuel + MaxFuel * ratio, 0f, MaxFuel);
     }
 
     public VehicleSaveData CaptureSaveData()

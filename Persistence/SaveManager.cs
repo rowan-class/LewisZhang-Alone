@@ -14,6 +14,7 @@ public class SaveData
     public VectorSaveData PlayerPosition { get; set; }
     public VehicleSaveData Vehicle { get; set; }
     public ThrottleSaveData Throttle { get; set; }
+    public bool FuelPortLit { get; set; }
     public List<FuelBarrelSaveData> FuelBarrels { get; set; } = new();
     public int CarriedFuelBarrelIndex { get; set; } = -1;
 }

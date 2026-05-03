@@ -67,9 +67,19 @@ Camera 决定视角
 车的油量这个变量应该写在gamestate里还是VehicleEntity.cs里比较好？
 油量随车前进减少：处于加速中减少的多，到达极速后消耗的更少（设置两个值）
 
-加油：
-一个槽位和一个按钮两个组件组成。都在车上。
-玩家拿着油走到槽位（油桶和槽位有碰撞的时候）消耗玩家手上的油桶，点亮槽位。玩家跳起来顶到按钮的时候，槽位从点亮变不点亮，邮箱加30%的油。如果槽位已经点亮，玩家拿着油桶也不会消耗手上的油桶。
+加油：（这一块放在第二层左边）
+一个放入的箱子和一个按钮两个组件组成。都在车上。
+玩家拿着油走到箱子前面，如果箱子不是点亮状态，箱子打开，玩家按G松手之后就可以放入油，消耗玩家手上的油桶，点亮槽位。
+玩家跳起来顶到按钮的时候，槽位从点亮变不点亮，邮箱加30%的油。
+如果槽位已经点亮，玩家按G也只是丢下油，箱子也不会显示打开。
+
+48*24
+Content/modules/button/button1.png 没有被顶的按钮
+Content/modules/button/button2.png 被顶
+64*64:
+Content/modules/fuel_port/fuel_port1.png 未点亮关闭状态
+Content/modules/fuel_port/fuel_port2.png 未点亮开启状态
+Content/modules/fuel_port/fuel_port3.png 点亮关闭状态
 
 速度拉杆: 要求位于note/速度杆.txt
 
