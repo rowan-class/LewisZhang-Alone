@@ -9,6 +9,9 @@ public enum Art
 {
     Player1,
     Player2,
+    Player3,
+    Player4,
+    Player5,
     Vehicle,
     Background,
     Button,
@@ -24,8 +27,11 @@ public static class AssetManager
     {
         textures.Clear();
 
-        textures[Art.Player1] = content.Load<Texture2D>("player1");
-        textures[Art.Player2] = content.Load<Texture2D>("player2");
+        textures[Art.Player1] = content.Load<Texture2D>("player/player1");
+        textures[Art.Player2] = content.Load<Texture2D>("player/player2");
+        textures[Art.Player3] = content.Load<Texture2D>("player/player3");
+        textures[Art.Player4] = content.Load<Texture2D>("player/player4");
+        textures[Art.Player5] = content.Load<Texture2D>("player/player5");
         textures[Art.Vehicle] = content.Load<Texture2D>("Vehicle");
         textures[Art.Background] = content.Load<Texture2D>("background");
         textures[Art.Button] = CreateSolidTexture(graphicsDevice, 120, 40, Color.LightGray);

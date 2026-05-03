@@ -22,7 +22,7 @@ public static class WorldConfig
     public const float CameraShakeMaxDuration = 0.88f;
 
     public static readonly Vector2 ScreenSize = new(ScreenWidth, ScreenHeight);
-    public static readonly Point PlayerSize = new(64, 64);
+    public static readonly Point PlayerSize = new(48, 48);
     public static readonly Point VehicleSize = new(1000, 540);
     public static readonly Point FuelBarrelSize = new(40, 40);
 

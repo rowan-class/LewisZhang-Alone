@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace LewisZhang_Alone;
 
@@ -15,8 +16,12 @@ public class Player : PhysicsEntity
     private const float GroundMoveSpeed = 320f;
     private const float AirMoveSpeed = 250f;
     private const float JumpSpeed = 720f;
+    private const float AnimationFrameSeconds = 0.1f;
 
-    private Art _facingArt = Art.Player1;
+    private bool _isFacingLeft;
+    private bool _isMovingHorizontally;
+    private bool _isCarrying;
+    private float _animationTimer;
     private PlayerState _state = PlayerState.Falling;
 
     public PlayerState CurrentState => _state;
@@ -47,16 +52,17 @@ public class Player : PhysicsEntity
             movementInput -= 1f;
         }
 
+        _isMovingHorizontally = movementInput != 0f;
+        _isCarrying = levelScene.IsPlayerCarryingFuelBarrel;
+
         if (movementInput > 0f)
         {
-            _facingArt = Art.Player1;
+            _isFacingLeft = false;
         }
         else if (movementInput < 0f)
         {
-            _facingArt = Art.Player2;
+            _isFacingLeft = true;
         }
-
-        _texture = AssetManager.GetTexture(_facingArt);
 
         if (!levelScene.IsPlayerAttachedToVehicle(this))
         {
@@ -74,6 +80,18 @@ public class Player : PhysicsEntity
         SimulatePhysics(dt);
         KeepInsideWorldBounds();
         UpdateState();
+        UpdateAnimation(dt);
+    }
+
+    public override void Draw(SpriteBatch spriteBatch)
+    {
+        if (!_isActive || _texture == null)
+        {
+            return;
+        }
+
+        SpriteEffects effects = _isFacingLeft ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
+        spriteBatch.Draw(_texture, GetBounds(), null, _tint, 0f, Vector2.Zero, effects, 0f);
     }
 
     protected override IEnumerable<Rectangle> GetSolidRectangles()
@@ -90,7 +108,7 @@ public class Player : PhysicsEntity
     {
         float anchorY = _position.Y + 10f;
 
-        if (_facingArt == Art.Player2)
+        if (_isFacingLeft)
         {
             return new Vector2(_position.X - carriedItemSize.X - 8f, anchorY);
         }
@@ -132,5 +150,36 @@ public class Player : PhysicsEntity
         {
             _state = PlayerState.Falling;
         }
+    }
+
+    private void UpdateAnimation(float dt)
+    {
+        if (_isMovingHorizontally && isGrounded)
+        {
+            _animationTimer += dt;
+        }
+        else
+        {
+            _animationTimer = 0f;
+        }
+
+        _texture = AssetManager.GetTexture(GetAnimationArt());
+    }
+
+    private Art GetAnimationArt()
+    {
+        if (!isGrounded)
+        {
+            return Art.Player5;
+        }
+
+        bool useSecondFrame = _isMovingHorizontally && (int)(_animationTimer / AnimationFrameSeconds) % 2 == 1;
+
+        if (_isCarrying)
+        {
+            return useSecondFrame ? Art.Player4 : Art.Player3;
+        }
+
+        return useSecondFrame ? Art.Player2 : Art.Player1;
     }
 }

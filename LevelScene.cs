@@ -35,6 +35,7 @@ public class LevelScene : Scene
     public float WorldScrollX => _worldScrollX;
     public float VehicleSpeed => _vehicle.Speed;
     public VehicleEntity Vehicle => _vehicle;
+    public bool IsPlayerCarryingFuelBarrel => _carriedFuelBarrel != null;
 
     public override void Update(GameTime gameTime)
     {
