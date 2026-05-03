@@ -15,11 +15,11 @@ public static class WorldConfig
     public const float CloseCameraMaxLookAheadX = 120f;
     public const float CameraLookAheadSharpness = 8f;
     public const float CameraMinShakeSpeed = 20f;
-    public const float CameraShakeMaxOffset = 1f;
-    public const float CameraShakeMinDelay = 1f;
-    public const float CameraShakeMaxDelay = 2f;
-    public const float CameraShakeMinDuration = 0.28f;
-    public const float CameraShakeMaxDuration = 0.88f;
+    public const float CameraShakeMaxOffset = 2f;
+    public const float CameraShakeMinDelay = 2f;
+    public const float CameraShakeMaxDelay = 5f;
+    public const float CameraShakeMinDuration = 1f;
+    public const float CameraShakeMaxDuration = 2f;
 
     public static readonly Vector2 ScreenSize = new(ScreenWidth, ScreenHeight);
     public static readonly Point PlayerSize = new(48, 48);
