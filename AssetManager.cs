@@ -13,6 +13,7 @@ public enum Art
     Player4,
     Player5,
     Vehicle,
+    Throttle,
     Background,
     Button,
     pixel
@@ -33,6 +34,7 @@ public static class AssetManager
         textures[Art.Player4] = content.Load<Texture2D>("player/player4");
         textures[Art.Player5] = content.Load<Texture2D>("player/player5");
         textures[Art.Vehicle] = content.Load<Texture2D>("Vehicle");
+        textures[Art.Throttle] = content.Load<Texture2D>("modules/throttle");
         textures[Art.Background] = content.Load<Texture2D>("background");
         textures[Art.Button] = CreateSolidTexture(graphicsDevice, 120, 40, Color.LightGray);
         textures[Art.pixel] = CreateSolidTexture(graphicsDevice, 1, 1, Color.White);

@@ -5,8 +5,11 @@ namespace LewisZhang_Alone;
 
 public class VehicleEntity : SpriteEntity
 {
-    private const float PoweredAcceleration = 180f;
+    private const float PoweredAcceleration = 100f;
     private const float CoastDeceleration = 120f;
+    private const float MaxFuel = 100f;
+    private const float AcceleratingFuelUsePerSecond = 4f;
+    private const float CruisingFuelUsePerSecond = 1.5f;
 
     // Edit these rectangles later to hand-author interior floors, walls, and shelves.
     // They are in vehicle-local coordinates.
@@ -29,9 +32,12 @@ public class VehicleEntity : SpriteEntity
     };
 
     private float _speed;
+    private float _fuel = MaxFuel;
 
     public bool Powered { get; private set; }
     public float Speed => _speed;
+    public float Fuel => _fuel;
+    public float FuelRatio => System.Math.Clamp(_fuel / MaxFuel, 0f, 1f);
     public Rectangle CabinBoundsWorld => OffsetRectangle(WorldConfig.VehicleCabinBoundsLocal);
 
     public VehicleEntity()
@@ -43,24 +49,42 @@ public class VehicleEntity : SpriteEntity
     {
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-        if (Powered)
+        if (Powered && _fuel > 0f)
         {
+            bool isCruising = _speed >= WorldConfig.VehicleMaxSpeed;
             _speed = System.MathF.Min(WorldConfig.VehicleMaxSpeed, _speed + PoweredAcceleration * dt);
+            ConsumeFuel((isCruising ? CruisingFuelUsePerSecond : AcceleratingFuelUsePerSecond) * dt);
         }
         else
         {
+            Powered = false;
             _speed = System.MathF.Max(0f, _speed - CoastDeceleration * dt);
         }
     }
 
     public void TogglePower()
     {
-        Powered = !Powered;
+        SetPowered(!Powered);
+    }
+
+    public void SetPowered(bool powered)
+    {
+        Powered = powered && _fuel > 0f;
     }
 
     public void AdjustSpeed(float delta)
     {
         _speed = System.Math.Clamp(_speed + delta, 0f, WorldConfig.VehicleMaxSpeed);
+    }
+
+    private void ConsumeFuel(float amount)
+    {
+        _fuel = System.MathF.Max(0f, _fuel - amount);
+
+        if (_fuel <= 0f)
+        {
+            Powered = false;
+        }
     }
 
     public bool IsInsideCabin(Rectangle playerBounds)

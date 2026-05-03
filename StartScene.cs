@@ -8,7 +8,7 @@ public class StartScene : Scene
     {
         AddEntity(new TextEntity(new Vector2(640, 180), "Vehicle Prototype", TextAlignment.TopCenter));
         AddEntity(new TextEntity(new Vector2(640, 240), "WASD / Arrows Move   Space Jump", TextAlignment.TopCenter));
-        AddEntity(new TextEntity(new Vector2(640, 280), "E Toggle Power   Shift Toggle Camera", TextAlignment.TopCenter));
+        AddEntity(new TextEntity(new Vector2(640, 280), "G + D Push Throttle   Shift Toggle Camera", TextAlignment.TopCenter));
         AddEntity(new TextEntity(new Vector2(640, 320), "G Pick Up / Drop Fuel Barrel   F3 Toggle Debug", TextAlignment.TopCenter));
         AddEntity(new TextEntity(new Vector2(640, 360), "Press Enter or click Start", TextAlignment.TopCenter));
         AddEntity(new ButtonEntity(Art.Button, new Vector2(540, 460), "Start", "level1"));

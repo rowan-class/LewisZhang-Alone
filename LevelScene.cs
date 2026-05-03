@@ -11,6 +11,8 @@ public class LevelScene : Scene
 
     private readonly Camera2D _camera = new();
     private readonly VehicleEntity _vehicle = new();
+    private readonly ThrottleEntity _throttle;
+    private readonly FuelDisplayEntity _fuelDisplay;
     private readonly Player _player = new(WorldConfig.PlayerStartPosition);
     private readonly GroundEntity _ground = new();
     private readonly List<FuelBarrelEntity> _fuelBarrels = new();
@@ -23,7 +25,11 @@ public class LevelScene : Scene
 
     public LevelScene()
     {
+        _throttle = new ThrottleEntity(_vehicle);
+        _fuelDisplay = new FuelDisplayEntity(_vehicle);
         _vehicle.SetScene(this);
+        _throttle.SetScene(this);
+        _fuelDisplay.SetScene(this);
         _player.SetScene(this);
         _ground.SetScene(this);
         _ground.Update(new GameTime());
@@ -36,21 +42,22 @@ public class LevelScene : Scene
     public float VehicleSpeed => _vehicle.Speed;
     public VehicleEntity Vehicle => _vehicle;
     public bool IsPlayerCarryingFuelBarrel => _carriedFuelBarrel != null;
+    public Player Player => _player;
+    public Rectangle PlayerBounds => _player.GetBounds();
 
     public override void Update(GameTime gameTime)
     {
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
-
-        if (ServiceLocator.Input.IsActionPressed(Action.ToggleVehiclePower))
-        {
-            _vehicle.TogglePower();
-        }
 
         if (ServiceLocator.Input.IsActionPressed(Action.ToggleCameraView))
         {
             _preferOverviewView = !_preferOverviewView;
         }
 
+        _ground.Update(gameTime);
+        SpawnFuelBarrelsIfNeeded();
+        _player.Update(gameTime);
+        _throttle.Update(gameTime);
         _vehicle.Update(gameTime);
 
         if (Game1.Debug)
@@ -60,10 +67,8 @@ public class LevelScene : Scene
 
         _worldScrollX += _vehicle.Speed * dt;
 
-        _ground.Update(gameTime);
-        SpawnFuelBarrelsIfNeeded();
+        _fuelDisplay.Update(gameTime);
         UpdateFuelBarrels(gameTime);
-        _player.Update(gameTime);
         HandleFuelBarrelInteraction();
         UpdateCameraMode();
         _camera.Update(gameTime, _vehicle.Speed);
@@ -81,6 +86,8 @@ public class LevelScene : Scene
         DrawBackground(spriteBatch);
         _ground.Draw(spriteBatch);
         _vehicle.Draw(spriteBatch);
+        _throttle.Draw(spriteBatch);
+        _fuelDisplay.Draw(spriteBatch);
         DrawFuelBarrels(spriteBatch, carriedOnly: false);
         DrawFuelBarrels(spriteBatch, carriedOnly: true);
         _player.Draw(spriteBatch);
@@ -150,6 +157,16 @@ public class LevelScene : Scene
             yield return rect;
         }
 
+        foreach (Rectangle rect in _throttle.GetDebugRectangles())
+        {
+            yield return rect;
+        }
+
+        foreach (Rectangle rect in _fuelDisplay.GetDebugRectangles())
+        {
+            yield return rect;
+        }
+
         foreach (Rectangle rect in _player.GetDebugRectangles())
         {
             yield return rect;
@@ -203,7 +220,7 @@ public class LevelScene : Scene
         string cameraState = ShouldUseOverviewCamera() ? "Overview" : "Interior";
         string carryingState = _carriedFuelBarrel == null ? "None" : "Fuel Barrel";
 
-        spriteBatch.DrawString(AssetManager.ArialFont, "E Toggle Power", new Vector2(20, 20), Color.White);
+        spriteBatch.DrawString(AssetManager.ArialFont, "G + D Push Throttle", new Vector2(20, 20), Color.White);
         spriteBatch.DrawString(AssetManager.ArialFont, "Shift Toggle Camera", new Vector2(20, 48), Color.White);
         spriteBatch.DrawString(AssetManager.ArialFont, "WASD / Arrows Move, Space Jump, G Pick / Drop", new Vector2(20, 76), Color.White);
         spriteBatch.DrawString(AssetManager.ArialFont, "Vehicle: " + powerState + "  Speed: " + _vehicle.Speed.ToString("0.0"), new Vector2(20, 116), Color.White);
@@ -262,6 +279,11 @@ public class LevelScene : Scene
     private void HandleFuelBarrelInteraction()
     {
         if (!ServiceLocator.Input.IsActionPressed(Action.Interact))
+        {
+            return;
+        }
+
+        if (_throttle.IsPlayerPushing)
         {
             return;
         }

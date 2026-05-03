@@ -10,7 +10,7 @@ public static class WorldConfig
     public const int WorldHeight = 1600;
     public const int OverviewWidth = 2560;
     public const int OverviewHeight = 1440;
-    public const float VehicleMaxSpeed = 260f;
+    public const float VehicleMaxSpeed = 200f;
     public const float OverviewCameraMaxLookAheadX = 560f;
     public const float CloseCameraMaxLookAheadX = 120f;
     public const float CameraLookAheadSharpness = 8f;
@@ -25,6 +25,8 @@ public static class WorldConfig
     public static readonly Point PlayerSize = new(48, 48);
     public static readonly Point VehicleSize = new(1000, 540);
     public static readonly Point FuelBarrelSize = new(36, 36);
+    public static readonly Point FuelDisplaySize = new(30, 200);
+    public static readonly Point ThrottleSize = new(12, 36);
 
     public static readonly Rectangle OverviewViewBounds = new(
         (WorldWidth - OverviewWidth) / 2,
@@ -37,6 +39,10 @@ public static class WorldConfig
         OverviewViewBounds.Bottom - VehicleSize.Y - 120f);
 
     public static readonly Vector2 PlayerStartPosition = VehiclePosition + new Vector2(140f, 300f);
+    public static readonly Vector2 FuelDisplayBottomLeftLocal = new(120f, 422f);
+    public static readonly Vector2 ThrottleIdleTopLeftLocal = new(760f, 168f);
+    public const float ThrottleTravelDistance = 48f;
+    public const int ThrottleInteractionPadding = 20;
     public static readonly Rectangle CloseViewBounds = new((int)(VehiclePosition.X - 140f), (int)(VehiclePosition.Y - 120f), ScreenWidth, ScreenHeight);
     public static readonly Rectangle VehicleCabinBoundsLocal = new(60, 90, 860, 320);
     public static readonly Rectangle FakeGroundLocalRect = new(-20000, OverviewViewBounds.Bottom - 120, 50000, 120);
