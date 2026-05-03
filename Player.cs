@@ -110,10 +110,10 @@ public class Player : PhysicsEntity
 
         if (_isFacingLeft)
         {
-            return new Vector2(_position.X - carriedItemSize.X - 8f, anchorY);
+            return new Vector2(_position.X - carriedItemSize.X + 2f, anchorY);
         }
 
-        return new Vector2(_position.X + _size.X + 8f, anchorY);
+        return new Vector2(_position.X + _size.X - 2f, anchorY);
     }
 
     private void KeepInsideWorldBounds()
