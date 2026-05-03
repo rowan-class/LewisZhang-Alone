@@ -14,6 +14,7 @@ public enum Action
     ToggleVehiclePower,
     ToggleCameraView,
     Interact,
+    SaveGame,
     DebugSpeedDecrease,
     DebugSpeedIncrease
 }
@@ -32,6 +33,7 @@ public class Input
             { Action.ToggleVehiclePower, new List<Keys> { Keys.E } },
             { Action.ToggleCameraView, new List<Keys> { Keys.LeftShift, Keys.RightShift } },
             { Action.Interact, new List<Keys> { Keys.G } },
+            { Action.SaveGame, new List<Keys> { Keys.F5 } },
             { Action.DebugSpeedDecrease, new List<Keys> { Keys.OemOpenBrackets } },
             { Action.DebugSpeedIncrease, new List<Keys> { Keys.OemCloseBrackets } }
         };

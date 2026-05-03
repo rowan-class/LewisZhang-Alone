@@ -23,7 +23,7 @@ public class LevelScene : Scene
     private bool _preferOverviewView;
     private FuelBarrelEntity _carriedFuelBarrel;
 
-    public LevelScene()
+    public LevelScene(SaveData saveData = null)
     {
         _throttle = new ThrottleEntity(_vehicle);
         _fuelDisplay = new FuelDisplayEntity(_vehicle);
@@ -34,7 +34,15 @@ public class LevelScene : Scene
         _ground.SetScene(this);
         _ground.Update(new GameTime());
 
-        SpawnInitialFuelBarrels();
+        if (saveData == null)
+        {
+            SpawnInitialFuelBarrels();
+        }
+        else
+        {
+            RestoreSaveData(saveData);
+        }
+
         UpdateCameraMode();
     }
 
@@ -52,6 +60,11 @@ public class LevelScene : Scene
         if (ServiceLocator.Input.IsActionPressed(Action.ToggleCameraView))
         {
             _preferOverviewView = !_preferOverviewView;
+        }
+
+        if (ServiceLocator.Input.IsActionPressed(Action.SaveGame))
+        {
+            SaveManager.Save(CaptureSaveData());
         }
 
         _ground.Update(gameTime);
@@ -222,7 +235,7 @@ public class LevelScene : Scene
 
         spriteBatch.DrawString(AssetManager.ArialFont, "G + D Push Throttle", new Vector2(20, 20), Color.White);
         spriteBatch.DrawString(AssetManager.ArialFont, "Shift Toggle Camera", new Vector2(20, 48), Color.White);
-        spriteBatch.DrawString(AssetManager.ArialFont, "WASD / Arrows Move, Space Jump, G Pick / Drop", new Vector2(20, 76), Color.White);
+        spriteBatch.DrawString(AssetManager.ArialFont, "WASD / Arrows Move, Space Jump, G Pick / Drop, F5 Save", new Vector2(20, 76), Color.White);
         spriteBatch.DrawString(AssetManager.ArialFont, "Vehicle: " + powerState + "  Speed: " + _vehicle.Speed.ToString("0.0"), new Vector2(20, 116), Color.White);
         spriteBatch.DrawString(AssetManager.ArialFont, "Camera: " + cameraState + "  Carrying: " + carryingState, new Vector2(20, 144), Color.White);
         spriteBatch.DrawString(AssetManager.ArialFont, "Player State: " + _player.CurrentState, new Vector2(20, 172), Color.White);
@@ -255,6 +268,73 @@ public class LevelScene : Scene
         barrel.SetScene(this);
         barrel.Update(new GameTime());
         _fuelBarrels.Add(barrel);
+    }
+
+    private SaveData CaptureSaveData()
+    {
+        SaveData data = new()
+        {
+            WorldScrollX = _worldScrollX,
+            NextFuelSpawnX = _nextFuelSpawnX,
+            PreferOverviewView = _preferOverviewView,
+            PlayerPosition = VectorSaveData.FromVector2(_player.Position),
+            Vehicle = _vehicle.CaptureSaveData(),
+            Throttle = _throttle.CaptureSaveData()
+        };
+
+        for (int i = 0; i < _fuelBarrels.Count; i++)
+        {
+            FuelBarrelEntity barrel = _fuelBarrels[i];
+            if (!barrel.IsActive)
+            {
+                continue;
+            }
+
+            if (barrel.IsCarried)
+            {
+                data.CarriedFuelBarrelIndex = data.FuelBarrels.Count;
+            }
+
+            data.FuelBarrels.Add(new FuelBarrelSaveData
+            {
+                Space = barrel.Space,
+                LocalPosition = VectorSaveData.FromVector2(barrel.LocalPosition)
+            });
+        }
+
+        return data;
+    }
+
+    private void RestoreSaveData(SaveData data)
+    {
+        _worldScrollX = data.WorldScrollX;
+        _nextFuelSpawnX = data.NextFuelSpawnX;
+        _preferOverviewView = data.PreferOverviewView;
+
+        if (data.PlayerPosition != null)
+        {
+            _player.SetPosition(data.PlayerPosition.ToVector2());
+        }
+
+        _vehicle.RestoreSaveData(data.Vehicle);
+        _throttle.RestoreSaveData(data.Throttle);
+
+        _fuelBarrels.Clear();
+        for (int i = 0; i < data.FuelBarrels.Count; i++)
+        {
+            FuelBarrelSaveData barrelData = data.FuelBarrels[i];
+            FuelBarrelEntity barrel = new(barrelData.Space, barrelData.LocalPosition.ToVector2());
+            barrel.SetScene(this);
+            barrel.Update(new GameTime());
+
+            if (i == data.CarriedFuelBarrelIndex)
+            {
+                barrel.PickUp(_player);
+                _carriedFuelBarrel = barrel;
+            }
+
+            _fuelBarrels.Add(barrel);
+        }
     }
 
     private void CleanupFuelBarrels()

@@ -68,6 +68,29 @@ public class ThrottleEntity : SpaceEntity
         spriteBatch.Draw(AssetManager.GetTexture(Art.Throttle), GetBounds(), Color.White);
     }
 
+    public ThrottleSaveData CaptureSaveData()
+    {
+        return new ThrottleSaveData
+        {
+            State = _state,
+            LeverPosition = _leverPosition,
+            HoldTimer = _holdTimer
+        };
+    }
+
+    public void RestoreSaveData(ThrottleSaveData data)
+    {
+        if (data == null)
+        {
+            return;
+        }
+
+        _state = data.State;
+        _leverPosition = MathHelper.Clamp(data.LeverPosition, 0f, 1f);
+        _holdTimer = System.MathF.Max(0f, data.HoldTimer);
+        UpdateLeverPosition();
+    }
+
     public override IEnumerable<Rectangle> GetDebugRectangles()
     {
         foreach (Rectangle rect in base.GetDebugRectangles())

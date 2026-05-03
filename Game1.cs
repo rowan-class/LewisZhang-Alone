@@ -37,6 +37,12 @@ public class Game1 : Game
         _sceneFactories = new Dictionary<string, Func<Scene>>
         {
             ["start"] = () => new StartScene(),
+            ["newGame"] = () =>
+            {
+                SaveManager.DeleteSave();
+                return new LevelScene();
+            },
+            ["continue"] = () => new LevelScene(SaveManager.Load()),
             ["level1"] = () => new LevelScene(),
         };
 

@@ -28,3 +28,8 @@ project.nuget.cache
 
 *.log
 *.tmp
+
+# Local save data
+saves/
+save.json
+*.save

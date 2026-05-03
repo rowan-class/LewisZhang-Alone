@@ -77,6 +77,28 @@ public class VehicleEntity : SpriteEntity
         _speed = System.Math.Clamp(_speed + delta, 0f, WorldConfig.VehicleMaxSpeed);
     }
 
+    public VehicleSaveData CaptureSaveData()
+    {
+        return new VehicleSaveData
+        {
+            Speed = _speed,
+            Fuel = _fuel,
+            Powered = Powered
+        };
+    }
+
+    public void RestoreSaveData(VehicleSaveData data)
+    {
+        if (data == null)
+        {
+            return;
+        }
+
+        _speed = System.Math.Clamp(data.Speed, 0f, WorldConfig.VehicleMaxSpeed);
+        _fuel = System.Math.Clamp(data.Fuel, 0f, MaxFuel);
+        Powered = data.Powered && _fuel > 0f;
+    }
+
     private void ConsumeFuel(float amount)
     {
         _fuel = System.MathF.Max(0f, _fuel - amount);
