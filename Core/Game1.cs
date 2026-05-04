@@ -10,6 +10,8 @@ public class Game1 : Game
 {
     // Default debug state. Press F3 in-game to toggle collision bounds.
     public static bool Debug = true;
+    // Flip this to show / enable the solar module.
+    public static bool SolarPanelEnabled = false;
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _entityBatch;
 

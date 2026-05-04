@@ -16,7 +16,9 @@ public enum Action
     Interact,
     SaveGame,
     DebugSpeedDecrease,
-    DebugSpeedIncrease
+    DebugSpeedIncrease,
+    ToggleAutoPickupModule,
+    ToggleSolarPanelModule
 }
 
 public class Input
@@ -35,7 +37,9 @@ public class Input
             { Action.Interact, new List<Keys> { Keys.G } },
             { Action.SaveGame, new List<Keys> { Keys.F5 } },
             { Action.DebugSpeedDecrease, new List<Keys> { Keys.OemOpenBrackets } },
-            { Action.DebugSpeedIncrease, new List<Keys> { Keys.OemCloseBrackets } }
+            { Action.DebugSpeedIncrease, new List<Keys> { Keys.OemCloseBrackets } },
+            { Action.ToggleAutoPickupModule, new List<Keys> { Keys.D7, Keys.NumPad7 } },
+            { Action.ToggleSolarPanelModule, new List<Keys> { Keys.D8, Keys.NumPad8 } }
         };
 
     private KeyboardState currentState;

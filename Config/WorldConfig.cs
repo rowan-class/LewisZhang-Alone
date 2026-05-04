@@ -28,6 +28,8 @@ public static class WorldConfig
     public static readonly Point FuelDisplaySize = new(62, 210);
     public static readonly Point FuelPortSize = new(64, 64);
     public static readonly Point FuelButtonSize = new(48, 24);
+    public static readonly Point AutoPickupModuleSize = new(64, 64);
+    public static readonly Point SolarPanelSize = new(200, 48);
     public static readonly Point ThrottleSize = new(12, 36);
 
     public static readonly Rectangle OverviewViewBounds = new(
@@ -45,6 +47,10 @@ public static class WorldConfig
     public static readonly Vector2 FuelPortTopLeftLocal = new(142f, 262f);
     public static readonly Vector2 FuelButtonTopLeftLocal = new(300f, 216f);
     public static readonly Vector2 HandbrakeButtonTopLeftLocal = new(680f, 84f);
+    public static readonly Vector2 SolarButtonTopLeftLocal = new(600f, 84f);
+    public static readonly Vector2 AutoPickupModuleTopLeftLocal = new(820f, 358f);
+    public static readonly Vector2 AutoPickupStoredBarrelTopLeftLocal = new(780f, 386f);
+    public static readonly Vector2 SolarPanelTopLeftLocal = new(370f, 16f);
     public static readonly Vector2 ThrottleIdleTopLeftLocal = new(760f, 168f);
     public const float FuelButtonPressedDuration = 0.35f;
     public const float FuelButtonCooldownDuration = 0.65f;

@@ -16,6 +16,9 @@ public class LevelScene : Scene
     private readonly FuelPortEntity _fuelPort;
     private readonly FuelButtonModuleEntity _fuelButton;
     private readonly HandbrakeButtonEntity _handbrakeButton;
+    private readonly SolarButtonEntity _solarButton;
+    private readonly AutoPickupModuleEntity _autoPickupModule;
+    private readonly SolarPanelEntity _solarPanel;
     private readonly Player _player = new(WorldConfig.PlayerStartPosition);
     private readonly GroundEntity _ground = new();
     private readonly List<FuelBarrelEntity> _fuelBarrels = new();
@@ -33,12 +36,18 @@ public class LevelScene : Scene
         _fuelPort = new FuelPortEntity();
         _fuelButton = new FuelButtonModuleEntity(_vehicle, _fuelPort);
         _handbrakeButton = new HandbrakeButtonEntity(_vehicle, _throttle);
+        _solarButton = new SolarButtonEntity(_vehicle);
+        _autoPickupModule = new AutoPickupModuleEntity();
+        _solarPanel = new SolarPanelEntity();
         _vehicle.SetScene(this);
         _throttle.SetScene(this);
         _fuelDisplay.SetScene(this);
         _fuelPort.SetScene(this);
         _fuelButton.SetScene(this);
         _handbrakeButton.SetScene(this);
+        _solarButton.SetScene(this);
+        _autoPickupModule.SetScene(this);
+        _solarPanel.SetScene(this);
         _player.SetScene(this);
         _ground.SetScene(this);
         _ground.Update(new GameTime());
@@ -62,6 +71,11 @@ public class LevelScene : Scene
     public Player Player => _player;
     public Rectangle PlayerBounds => _player.GetBounds();
 
+    public IEnumerable<FuelBarrelEntity> GetFuelBarrels()
+    {
+        return _fuelBarrels;
+    }
+
     public override void Update(GameTime gameTime)
     {
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -76,14 +90,30 @@ public class LevelScene : Scene
             SaveManager.Save(CaptureSaveData());
         }
 
+        if (Game1.Debug && ServiceLocator.Input.IsActionPressed(Action.ToggleAutoPickupModule))
+        {
+            _autoPickupModule.ToggleEnabled();
+        }
+
+        if (Game1.Debug && ServiceLocator.Input.IsActionPressed(Action.ToggleSolarPanelModule))
+        {
+            Game1.SolarPanelEnabled = !Game1.SolarPanelEnabled;
+            if (!Game1.SolarPanelEnabled)
+            {
+                _vehicle.SetSolarDriveActive(false);
+            }
+        }
+
         _ground.Update(gameTime);
         SpawnFuelBarrelsIfNeeded();
         _player.Update(gameTime);
+        _solarButton.Update(gameTime);
         _handbrakeButton.Update(gameTime);
         _throttle.Update(gameTime);
         _vehicle.Update(gameTime);
         _fuelPort.Update(gameTime);
         _fuelButton.Update(gameTime);
+        _solarPanel.Update(gameTime);
 
         if (Game1.Debug)
         {
@@ -95,6 +125,7 @@ public class LevelScene : Scene
         _fuelDisplay.Update(gameTime);
         UpdateFuelBarrels(gameTime);
         HandleFuelBarrelInteraction();
+        _autoPickupModule.Update(gameTime);
         UpdateCameraMode();
         _camera.Update(gameTime, _vehicle.Speed);
         CleanupFuelBarrels();
@@ -116,6 +147,9 @@ public class LevelScene : Scene
         _fuelPort.Draw(spriteBatch);
         _fuelButton.Draw(spriteBatch);
         _handbrakeButton.Draw(spriteBatch);
+        _solarButton.Draw(spriteBatch);
+        _autoPickupModule.Draw(spriteBatch);
+        _solarPanel.Draw(spriteBatch);
         DrawFuelBarrels(spriteBatch, carriedOnly: false);
         DrawFuelBarrels(spriteBatch, carriedOnly: true);
         _player.Draw(spriteBatch);
@@ -216,6 +250,21 @@ public class LevelScene : Scene
             yield return rect;
         }
 
+        foreach (Rectangle rect in _solarButton.GetDebugRectangles())
+        {
+            yield return rect;
+        }
+
+        foreach (Rectangle rect in _autoPickupModule.GetDebugRectangles())
+        {
+            yield return rect;
+        }
+
+        foreach (Rectangle rect in _solarPanel.GetDebugRectangles())
+        {
+            yield return rect;
+        }
+
         foreach (Rectangle rect in _player.GetDebugRectangles())
         {
             yield return rect;
@@ -279,6 +328,8 @@ public class LevelScene : Scene
             spriteBatch.DrawString(AssetManager.ArialFont, "Camera: " + cameraState + "  Carrying: " + carryingState, new Vector2(20, 144), Color.White);
             spriteBatch.DrawString(AssetManager.ArialFont, "Player State: " + _player.CurrentState, new Vector2(20, 172), Color.White);
             spriteBatch.DrawString(AssetManager.ArialFont, "Debug Speed: [ decrease   ] increase", new Vector2(20, 200), Color.Yellow);
+            spriteBatch.DrawString(AssetManager.ArialFont, "Auto Pickup: " + (_autoPickupModule.IsEnabled ? "On" : "Off") + "  (7 Toggle)", new Vector2(20, 228), Color.Yellow);
+            spriteBatch.DrawString(AssetManager.ArialFont, "Solar: " + (Game1.SolarPanelEnabled ? "On" : "Off") + "  (8 Toggle)", new Vector2(20, 256), Color.Cyan);
         }
     }
 
@@ -317,7 +368,9 @@ public class LevelScene : Scene
             PlayerPosition = VectorSaveData.FromVector2(_player.Position),
             Vehicle = _vehicle.CaptureSaveData(),
             Throttle = _throttle.CaptureSaveData(),
-            FuelPortLit = _fuelPort.IsLit
+            FuelPortLit = _fuelPort.IsLit,
+            AutoPickupEnabled = _autoPickupModule.IsEnabled,
+            SolarPanelInstalled = Game1.SolarPanelEnabled
         };
 
         for (int i = 0; i < _fuelBarrels.Count; i++)
@@ -348,6 +401,7 @@ public class LevelScene : Scene
         _worldScrollX = data.WorldScrollX;
         _nextFuelSpawnX = data.NextFuelSpawnX;
         _preferOverviewView = data.PreferOverviewView;
+        Game1.SolarPanelEnabled = data.SolarPanelInstalled;
 
         if (data.PlayerPosition != null)
         {
@@ -357,6 +411,7 @@ public class LevelScene : Scene
         _vehicle.RestoreSaveData(data.Vehicle);
         _throttle.RestoreSaveData(data.Throttle);
         _fuelPort.SetLit(data.FuelPortLit);
+        _autoPickupModule.SetEnabled(data.AutoPickupEnabled);
 
         _fuelBarrels.Clear();
         for (int i = 0; i < data.FuelBarrels.Count; i++)

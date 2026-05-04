@@ -8,6 +8,7 @@ public class VehicleEntity : SpriteEntity
     private const float PoweredAcceleration = 100f;
     private const float CoastDeceleration = 80f;
     private const float HandbrakeDeceleration = 240f;
+    private const float SolarSpeedBonus = 50f;
     private const float MaxFuel = 100f;
     private const float InitialFuel = 20f;
     private const float AcceleratingFuelUsePerSecond = 4f;
@@ -42,7 +43,8 @@ public class VehicleEntity : SpriteEntity
 
     public bool Powered { get; private set; }
     public bool HandbrakeActive { get; private set; }
-    public float Speed => _speed;
+    public bool SolarDriveActive { get; private set; }
+    public float Speed => HandbrakeActive ? 0f : System.MathF.Min(WorldConfig.VehicleMaxSpeed, _speed + GetSolarSpeedBonus());
     public float Fuel => _fuel;
     public float FuelRatio => System.Math.Clamp(_fuel / MaxFuel, 0f, 1f);
     public Rectangle CabinBoundsWorld => OffsetRectangle(WorldConfig.VehicleCabinBoundsLocal);
@@ -68,8 +70,9 @@ public class VehicleEntity : SpriteEntity
         }
         else if (Powered && _fuel > 0f)
         {
-            bool isCruising = _speed >= WorldConfig.VehicleMaxSpeed;
-            _speed = System.MathF.Min(WorldConfig.VehicleMaxSpeed, _speed + PoweredAcceleration * dt);
+            float maximumBaseSpeed = GetMaximumBaseSpeed();
+            bool isCruising = _speed >= maximumBaseSpeed;
+            _speed = System.MathF.Min(maximumBaseSpeed, _speed + PoweredAcceleration * dt);
             ConsumeFuel((isCruising ? CruisingFuelUsePerSecond : AcceleratingFuelUsePerSecond) * dt);
         }
         else
@@ -91,7 +94,7 @@ public class VehicleEntity : SpriteEntity
 
     public void AdjustSpeed(float delta)
     {
-        _speed = System.Math.Clamp(_speed + delta, 0f, WorldConfig.VehicleMaxSpeed);
+        _speed = System.Math.Clamp(_speed + delta, 0f, GetMaximumBaseSpeed());
         if (_speed <= 0f)
         {
             HandbrakeActive = false;
@@ -115,7 +118,8 @@ public class VehicleEntity : SpriteEntity
             Speed = _speed,
             Fuel = _fuel,
             Powered = Powered,
-            HandbrakeActive = HandbrakeActive
+            HandbrakeActive = HandbrakeActive,
+            SolarDriveActive = SolarDriveActive
         };
     }
 
@@ -129,19 +133,37 @@ public class VehicleEntity : SpriteEntity
         _speed = System.Math.Clamp(data.Speed, 0f, WorldConfig.VehicleMaxSpeed);
         _fuel = System.Math.Clamp(data.Fuel, 0f, MaxFuel);
         HandbrakeActive = data.HandbrakeActive && _speed > 0f;
+        SolarDriveActive = Game1.SolarPanelEnabled && data.SolarDriveActive && !HandbrakeActive;
         Powered = !HandbrakeActive && data.Powered && _fuel > 0f;
     }
 
     public bool TryActivateHandbrake()
     {
-        if (HandbrakeActive || _speed <= 0f)
+        if (HandbrakeActive || Speed <= 0f)
         {
             return false;
         }
 
         HandbrakeActive = true;
         Powered = false;
+        SolarDriveActive = false;
         return true;
+    }
+
+    public void ToggleSolarDrive()
+    {
+        if (!Game1.SolarPanelEnabled)
+        {
+            SolarDriveActive = false;
+            return;
+        }
+
+        SolarDriveActive = !SolarDriveActive;
+    }
+
+    public void SetSolarDriveActive(bool isActive)
+    {
+        SolarDriveActive = Game1.SolarPanelEnabled && isActive && !HandbrakeActive;
     }
 
     private void ConsumeFuel(float amount)
@@ -152,6 +174,16 @@ public class VehicleEntity : SpriteEntity
         {
             Powered = false;
         }
+    }
+
+    private float GetSolarSpeedBonus()
+    {
+        return Game1.SolarPanelEnabled && SolarDriveActive ? SolarSpeedBonus : 0f;
+    }
+
+    private float GetMaximumBaseSpeed()
+    {
+        return System.MathF.Max(0f, WorldConfig.VehicleMaxSpeed - GetSolarSpeedBonus());
     }
 
     public bool IsInsideCabin(Rectangle playerBounds)

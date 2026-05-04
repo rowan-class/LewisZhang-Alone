@@ -15,6 +15,8 @@ public class SaveData
     public VehicleSaveData Vehicle { get; set; }
     public ThrottleSaveData Throttle { get; set; }
     public bool FuelPortLit { get; set; }
+    public bool AutoPickupEnabled { get; set; }
+    public bool SolarPanelInstalled { get; set; }
     public List<FuelBarrelSaveData> FuelBarrels { get; set; } = new();
     public int CarriedFuelBarrelIndex { get; set; } = -1;
 }
@@ -41,6 +43,7 @@ public class VehicleSaveData
     public float Fuel { get; set; }
     public bool Powered { get; set; }
     public bool HandbrakeActive { get; set; }
+    public bool SolarDriveActive { get; set; }
 }
 
 public class ThrottleSaveData
