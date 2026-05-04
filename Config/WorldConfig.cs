@@ -40,16 +40,17 @@ public static class WorldConfig
         OverviewViewBounds.X + (OverviewViewBounds.Width - VehicleSize.X) / 2f,
         OverviewViewBounds.Bottom - VehicleSize.Y - 120f);
 
-    public static readonly Vector2 PlayerStartPosition = VehiclePosition + new Vector2(140f, 300f);
+    public static readonly Vector2 PlayerStartPosition = VehiclePosition + new Vector2(520f, 278f);
     public static readonly Vector2 FuelDisplayBottomLeftLocal = new(80-10f, 300+20f);
     public static readonly Vector2 FuelPortTopLeftLocal = new(142f, 262f);
     public static readonly Vector2 FuelButtonTopLeftLocal = new(300f, 216f);
+    public static readonly Vector2 HandbrakeButtonTopLeftLocal = new(680f, 84f);
     public static readonly Vector2 ThrottleIdleTopLeftLocal = new(760f, 168f);
     public const float FuelButtonPressedDuration = 0.35f;
     public const float FuelButtonCooldownDuration = 0.65f;
     public const float ThrottleTravelDistance = 48f;
     public const int ThrottleInteractionPadding = 20;
     public static readonly Rectangle CloseViewBounds = new((int)(VehiclePosition.X - 140f), (int)(VehiclePosition.Y - 120f), ScreenWidth, ScreenHeight);
-    public static readonly Rectangle VehicleCabinBoundsLocal = new(60, 90, 860, 320);
+    public static readonly Rectangle VehicleCabinBoundsLocal = new(60, -120, 860, 540);
     public static readonly Rectangle FakeGroundLocalRect = new(-20000, OverviewViewBounds.Bottom - 120, 50000, 120);
 }

@@ -7,7 +7,7 @@ namespace LewisZhang_Alone;
 public class FuelPortEntity : SpaceEntity
 {
     private const int InteractionPaddingX = 36;
-    private const int InteractionPaddingY = 20;
+    private const int InteractionPaddingY = 10;
 
     private bool _isOpen;
 

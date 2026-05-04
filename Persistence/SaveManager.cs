@@ -40,6 +40,7 @@ public class VehicleSaveData
     public float Speed { get; set; }
     public float Fuel { get; set; }
     public bool Powered { get; set; }
+    public bool HandbrakeActive { get; set; }
 }
 
 public class ThrottleSaveData

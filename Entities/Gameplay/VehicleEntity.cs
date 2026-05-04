@@ -6,7 +6,8 @@ namespace LewisZhang_Alone;
 public class VehicleEntity : SpriteEntity
 {
     private const float PoweredAcceleration = 100f;
-    private const float CoastDeceleration = 120f;
+    private const float CoastDeceleration = 80f;
+    private const float HandbrakeDeceleration = 240f;
     private const float MaxFuel = 100f;
     private const float InitialFuel = 20f;
     private const float AcceleratingFuelUsePerSecond = 4f;
@@ -20,15 +21,19 @@ public class VehicleEntity : SpriteEntity
         new Rectangle(24, 422, 900, 16),
         // 二层：
         new Rectangle(90, 326, 320, 12),
-        new Rectangle(90+420, 326, 330, 12),
+        new Rectangle(90+420, 326, 400, 12),
         // 三层：
         new Rectangle(90, 204, 320, 12),
         new Rectangle(90+520, 204, 320, 12),
         // 车顶：
-        new Rectangle(90, 68, 820, 16),
+        new Rectangle(60, 64, 820, 20),
+        // new Rectangle(60+360, 100, 120, 12),
+        // new Rectangle(90, 68, 820, 16),
         // 左墙壁：
-        new Rectangle(90, 110, 20, 180),
+        new Rectangle(130, 110, 20, 230),
+        new Rectangle(40, 110, 20, 230),
         // 右墙壁：
+        new Rectangle(890, 110, 20, 320),
         new Rectangle(910, 110, 20, 320),
     };
 
@@ -36,6 +41,7 @@ public class VehicleEntity : SpriteEntity
     private float _fuel = InitialFuel;
 
     public bool Powered { get; private set; }
+    public bool HandbrakeActive { get; private set; }
     public float Speed => _speed;
     public float Fuel => _fuel;
     public float FuelRatio => System.Math.Clamp(_fuel / MaxFuel, 0f, 1f);
@@ -50,7 +56,17 @@ public class VehicleEntity : SpriteEntity
     {
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-        if (Powered && _fuel > 0f)
+        if (HandbrakeActive)
+        {
+            Powered = false;
+            _speed = System.MathF.Max(0f, _speed - HandbrakeDeceleration * dt);
+            if (_speed <= 0f)
+            {
+                _speed = 0f;
+                HandbrakeActive = false;
+            }
+        }
+        else if (Powered && _fuel > 0f)
         {
             bool isCruising = _speed >= WorldConfig.VehicleMaxSpeed;
             _speed = System.MathF.Min(WorldConfig.VehicleMaxSpeed, _speed + PoweredAcceleration * dt);
@@ -70,12 +86,16 @@ public class VehicleEntity : SpriteEntity
 
     public void SetPowered(bool powered)
     {
-        Powered = powered && _fuel > 0f;
+        Powered = !HandbrakeActive && powered && _fuel > 0f;
     }
 
     public void AdjustSpeed(float delta)
     {
         _speed = System.Math.Clamp(_speed + delta, 0f, WorldConfig.VehicleMaxSpeed);
+        if (_speed <= 0f)
+        {
+            HandbrakeActive = false;
+        }
     }
 
     public void AddFuelByRatio(float ratio)
@@ -94,7 +114,8 @@ public class VehicleEntity : SpriteEntity
         {
             Speed = _speed,
             Fuel = _fuel,
-            Powered = Powered
+            Powered = Powered,
+            HandbrakeActive = HandbrakeActive
         };
     }
 
@@ -107,7 +128,20 @@ public class VehicleEntity : SpriteEntity
 
         _speed = System.Math.Clamp(data.Speed, 0f, WorldConfig.VehicleMaxSpeed);
         _fuel = System.Math.Clamp(data.Fuel, 0f, MaxFuel);
-        Powered = data.Powered && _fuel > 0f;
+        HandbrakeActive = data.HandbrakeActive && _speed > 0f;
+        Powered = !HandbrakeActive && data.Powered && _fuel > 0f;
+    }
+
+    public bool TryActivateHandbrake()
+    {
+        if (HandbrakeActive || _speed <= 0f)
+        {
+            return false;
+        }
+
+        HandbrakeActive = true;
+        Powered = false;
+        return true;
     }
 
     private void ConsumeFuel(float amount)

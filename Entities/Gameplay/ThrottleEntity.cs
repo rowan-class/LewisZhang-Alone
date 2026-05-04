@@ -39,11 +39,16 @@ public class ThrottleEntity : SpaceEntity
 
     public override void Update(GameTime gameTime)
     {
+        Rectangle previousBounds = GetBounds();
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         bool hasFuel = _vehicle.Fuel > 0f;
         bool inputPush = IsPushInputActive();
 
-        if (!hasFuel)
+        if (_vehicle.HandbrakeActive)
+        {
+            ForceFastReturn();
+        }
+        else if (!hasFuel)
         {
             if (_state != ThrottleState.Idle)
             {
@@ -61,11 +66,24 @@ public class ThrottleEntity : SpaceEntity
             && (_state == ThrottleState.Pushing || _state == ThrottleState.ActiveHold);
         _vehicle.SetPowered(hasPower);
         UpdateLeverPosition();
+        ResolvePlayerOverlapAfterMovement(previousBounds);
     }
 
     public override void Draw(SpriteBatch spriteBatch)
     {
         spriteBatch.Draw(AssetManager.GetTexture(Art.Throttle), GetBounds(), Color.White);
+    }
+
+    public Rectangle GetCollisionBounds()
+    {
+        return GetBounds();
+    }
+
+    public void ForceFastReturn()
+    {
+        _holdTimer = 0f;
+        _isPlayerPushing = false;
+        _state = _leverPosition > 0f ? ThrottleState.FastReturn : ThrottleState.Idle;
     }
 
     public ThrottleSaveData CaptureSaveData()
@@ -221,6 +239,39 @@ public class ThrottleEntity : SpaceEntity
     private void UpdateLeverPosition()
     {
         SetLocalPosition(WorldConfig.ThrottleIdleTopLeftLocal + new Vector2(WorldConfig.ThrottleTravelDistance * _leverPosition, 0f));
+    }
+
+    private void ResolvePlayerOverlapAfterMovement(Rectangle previousBounds)
+    {
+        if (_scene is not LevelScene levelScene)
+        {
+            return;
+        }
+
+        Rectangle currentBounds = GetBounds();
+        if (currentBounds == Rectangle.Empty || previousBounds == Rectangle.Empty || currentBounds == previousBounds)
+        {
+            return;
+        }
+
+        Rectangle playerBounds = levelScene.PlayerBounds;
+        if (!playerBounds.Intersects(currentBounds))
+        {
+            return;
+        }
+
+        Vector2 playerPosition = levelScene.Player.Position;
+
+        if (currentBounds.Left < previousBounds.Left)
+        {
+            levelScene.Player.SetPosition(new Vector2(currentBounds.Left - playerBounds.Width, playerPosition.Y));
+            return;
+        }
+
+        if (currentBounds.Left > previousBounds.Left)
+        {
+            levelScene.Player.SetPosition(new Vector2(currentBounds.Right, playerPosition.Y));
+        }
     }
 
     private float GetIdleWorldX(LevelScene levelScene)

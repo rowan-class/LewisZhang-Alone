@@ -15,6 +15,7 @@ public class LevelScene : Scene
     private readonly FuelDisplayEntity _fuelDisplay;
     private readonly FuelPortEntity _fuelPort;
     private readonly FuelButtonModuleEntity _fuelButton;
+    private readonly HandbrakeButtonEntity _handbrakeButton;
     private readonly Player _player = new(WorldConfig.PlayerStartPosition);
     private readonly GroundEntity _ground = new();
     private readonly List<FuelBarrelEntity> _fuelBarrels = new();
@@ -31,11 +32,13 @@ public class LevelScene : Scene
         _fuelDisplay = new FuelDisplayEntity(_vehicle);
         _fuelPort = new FuelPortEntity();
         _fuelButton = new FuelButtonModuleEntity(_vehicle, _fuelPort);
+        _handbrakeButton = new HandbrakeButtonEntity(_vehicle, _throttle);
         _vehicle.SetScene(this);
         _throttle.SetScene(this);
         _fuelDisplay.SetScene(this);
         _fuelPort.SetScene(this);
         _fuelButton.SetScene(this);
+        _handbrakeButton.SetScene(this);
         _player.SetScene(this);
         _ground.SetScene(this);
         _ground.Update(new GameTime());
@@ -76,6 +79,7 @@ public class LevelScene : Scene
         _ground.Update(gameTime);
         SpawnFuelBarrelsIfNeeded();
         _player.Update(gameTime);
+        _handbrakeButton.Update(gameTime);
         _throttle.Update(gameTime);
         _vehicle.Update(gameTime);
         _fuelPort.Update(gameTime);
@@ -111,6 +115,7 @@ public class LevelScene : Scene
         _fuelDisplay.Draw(spriteBatch);
         _fuelPort.Draw(spriteBatch);
         _fuelButton.Draw(spriteBatch);
+        _handbrakeButton.Draw(spriteBatch);
         DrawFuelBarrels(spriteBatch, carriedOnly: false);
         DrawFuelBarrels(spriteBatch, carriedOnly: true);
         _player.Draw(spriteBatch);
@@ -156,6 +161,12 @@ public class LevelScene : Scene
         {
             yield return vehicleRect;
         }
+
+        Rectangle throttleRect = _throttle.GetCollisionBounds();
+        if (throttleRect != Rectangle.Empty)
+        {
+            yield return throttleRect;
+        }
     }
 
     public bool IsPlayerInsideVehicle(Player player)
@@ -196,6 +207,11 @@ public class LevelScene : Scene
         }
 
         foreach (Rectangle rect in _fuelButton.GetDebugRectangles())
+        {
+            yield return rect;
+        }
+
+        foreach (Rectangle rect in _handbrakeButton.GetDebugRectangles())
         {
             yield return rect;
         }
@@ -256,11 +272,12 @@ public class LevelScene : Scene
         spriteBatch.DrawString(AssetManager.ArialFont, "G + D Push Throttle", new Vector2(20, 20), Color.White);
         spriteBatch.DrawString(AssetManager.ArialFont, "Shift Toggle Camera", new Vector2(20, 48), Color.White);
         spriteBatch.DrawString(AssetManager.ArialFont, "WASD / Arrows Move, Space Jump, G Pick / Drop, F5 Save", new Vector2(20, 76), Color.White);
-        spriteBatch.DrawString(AssetManager.ArialFont, "Vehicle: " + powerState + "  Speed: " + _vehicle.Speed.ToString("0.0"), new Vector2(20, 116), Color.White);
-        spriteBatch.DrawString(AssetManager.ArialFont, "Camera: " + cameraState + "  Carrying: " + carryingState, new Vector2(20, 144), Color.White);
-        spriteBatch.DrawString(AssetManager.ArialFont, "Player State: " + _player.CurrentState, new Vector2(20, 172), Color.White);
+
         if (Game1.Debug)
         {
+            spriteBatch.DrawString(AssetManager.ArialFont, "Vehicle: " + powerState + "  Speed: " + _vehicle.Speed.ToString("0.0"), new Vector2(20, 116), Color.White);
+            spriteBatch.DrawString(AssetManager.ArialFont, "Camera: " + cameraState + "  Carrying: " + carryingState, new Vector2(20, 144), Color.White);
+            spriteBatch.DrawString(AssetManager.ArialFont, "Player State: " + _player.CurrentState, new Vector2(20, 172), Color.White);
             spriteBatch.DrawString(AssetManager.ArialFont, "Debug Speed: [ decrease   ] increase", new Vector2(20, 200), Color.Yellow);
         }
     }
