@@ -2,9 +2,8 @@
   {
     "id": "sandstorm_intro",
     "type": "sandstorm",
-    "triggerDistance": 4000,
-    "minDurationSeconds": 8.0,
-    "maxDurationSeconds": 14.0,
+    "minDistance": 4000.0,
+    "maxDistance": 5600.0,
     "scrollSpeed": 520.0,
     "alpha": 0.72
   },

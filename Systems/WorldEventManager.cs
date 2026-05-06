@@ -12,8 +12,8 @@ public class WorldEventDefinition
     public string Id { get; set; }
     public string Type { get; set; }
     public float TriggerDistance { get; set; }
-    public float MinDurationSeconds { get; set; }
-    public float MaxDurationSeconds { get; set; }
+    public float MinDistance { get; set; }
+    public float MaxDistance { get; set; }
     public float ScrollSpeed { get; set; }
     public float Alpha { get; set; } = 0.7f;
 }
@@ -55,7 +55,6 @@ public class WorldEventManager
 
     private readonly List<WorldEventDefinition> _definitions;
     private readonly Dictionary<string, WorldEventRuntimeState> _runtimeStates = new();
-    private readonly Random _random = new(19);
     private float _lastTravelDistance;
 
     public WorldEventManager()
@@ -82,7 +81,7 @@ public class WorldEventManager
                 continue;
             }
 
-            if (!runtime.HasTriggered && travelDistance >= definition.TriggerDistance)
+            if (!runtime.HasTriggered && travelDistance >= GetActivationDistance(definition))
             {
                 Activate(definition, runtime);
             }
@@ -94,7 +93,7 @@ public class WorldEventManager
 
             if (string.Equals(definition.Type, SandstormType, StringComparison.OrdinalIgnoreCase))
             {
-                UpdateSandstorm(definition, runtime, dt, cameraViewBounds);
+                UpdateSandstorm(definition, runtime, dt, travelDistance, cameraViewBounds);
                 continue;
             }
 
@@ -255,7 +254,7 @@ public class WorldEventManager
             if (string.Equals(definition.Type, SandstormType, StringComparison.OrdinalIgnoreCase))
             {
                 return runtime.RemainingDuration > 0f
-                    ? $"{definition.Type} {runtime.RemainingDuration:0.0}s"
+                    ? $"{definition.Type} {runtime.RemainingDuration:0.0} dist"
                     : $"{definition.Type} exiting";
             }
         }
@@ -316,11 +315,9 @@ public class WorldEventManager
 
         if (string.Equals(definition.Type, SandstormType, StringComparison.OrdinalIgnoreCase))
         {
-            float minDuration = MathF.Max(0.1f, definition.MinDurationSeconds);
-            float maxDuration = MathF.Max(minDuration, definition.MaxDurationSeconds);
-            runtime.RemainingDuration = minDuration + (float)_random.NextDouble() * (maxDuration - minDuration);
-            runtime.SheetCount = CreateSandstormSheetCount(definition, runtime.RemainingDuration);
-            runtime.ScrollOffset = CreateInitialSandstormScrollOffset(definition, runtime.SheetCount, runtime.RemainingDuration);
+            runtime.RemainingDuration = MathF.Max(0f, GetSandstormMaxDistance(definition) - GetSandstormMinDistance(definition));
+            runtime.SheetCount = 1;
+            runtime.ScrollOffset = 0f;
             runtime.Phase = 0;
             runtime.AuxiliaryValue = 0f;
             return;
@@ -336,22 +333,20 @@ public class WorldEventManager
         }
     }
 
-    private void UpdateSandstorm(WorldEventDefinition definition, WorldEventRuntimeState runtime, float dt, Rectangle cameraViewBounds)
+    private void UpdateSandstorm(WorldEventDefinition definition, WorldEventRuntimeState runtime, float dt, float travelDistance, Rectangle cameraViewBounds)
     {
         runtime.ScrollOffset += definition.ScrollSpeed * dt;
 
-        if (runtime.SheetCount <= 0)
+        float maxDistance = GetSandstormMaxDistance(definition);
+        if (travelDistance <= maxDistance)
         {
-            runtime.SheetCount = CreateSandstormSheetCount(definition, MathF.Max(runtime.RemainingDuration, definition.MinDurationSeconds));
-            runtime.ScrollOffset = CreateInitialSandstormScrollOffset(definition, runtime.SheetCount, MathF.Max(runtime.RemainingDuration, definition.MinDurationSeconds));
+            float spacing = GetSandstormSheetSpacing(AssetManager.GetTexture(Art.Sandstorm).Width);
+            runtime.SheetCount = Math.Max(1, 1 + (int)MathF.Floor(runtime.ScrollOffset / MathF.Max(1f, spacing)));
         }
 
-        if (runtime.RemainingDuration > 0f)
-        {
-            runtime.RemainingDuration = MathF.Max(0f, runtime.RemainingDuration - dt);
-        }
+        runtime.RemainingDuration = MathF.Max(0f, maxDistance - travelDistance);
 
-        if (runtime.RemainingDuration <= 0f && HasSandstormFullyExited(runtime, cameraViewBounds))
+        if (travelDistance > maxDistance && HasSandstormFullyExited(runtime, cameraViewBounds))
         {
             runtime.IsActive = false;
         }
@@ -534,27 +529,6 @@ public class WorldEventManager
         return MathF.Max(0.7f, 1f - SandstormBaseLayerSpeedStep * layerIndex);
     }
 
-    private int CreateSandstormSheetCount(WorldEventDefinition definition, float durationSeconds)
-    {
-        Texture2D sandstormTexture = AssetManager.GetTexture(Art.Sandstorm);
-        float textureWidth = sandstormTexture.Width;
-        if (textureWidth <= 0f)
-        {
-            return 0;
-        }
-
-        float spacing = GetSandstormSheetSpacing(textureWidth);
-        float maxCameraWidth = MathF.Max(WorldConfig.OverviewWidth, WorldConfig.CloseViewBounds.Width);
-        float slowestLayerSpeedMultiplier = GetSandstormLayerSpeedMultiplier(SandstormLayerCount - 1);
-        float maxTravelDistance = definition.ScrollSpeed * MathF.Max(0.1f, durationSeconds) * slowestLayerSpeedMultiplier;
-        float phaseOffset = spacing * SandstormLayerPhaseOffsetFactor * (SandstormLayerCount - 1);
-        float fixedDistance = maxCameraWidth + SandstormLeadInPadding + phaseOffset + textureWidth;
-        float spacingBudget = maxTravelDistance - fixedDistance;
-        int sheetCount = (int)MathF.Floor(spacingBudget / spacing) + 1;
-
-        return Math.Max(1, sheetCount);
-    }
-
     private bool HasSandstormFullyExited(WorldEventRuntimeState runtime, Rectangle cameraViewBounds)
     {
         Texture2D sandstormTexture = AssetManager.GetTexture(Art.Sandstorm);
@@ -576,28 +550,21 @@ public class WorldEventManager
         return tailX + textureWidth < cameraViewBounds.Left;
     }
 
-    private float CreateInitialSandstormScrollOffset(WorldEventDefinition definition, int sheetCount, float durationSeconds)
+    private static float GetActivationDistance(WorldEventDefinition definition)
     {
-        Texture2D sandstormTexture = AssetManager.GetTexture(Art.Sandstorm);
-        float textureWidth = sandstormTexture.Width;
-        if (textureWidth <= 0f || sheetCount <= 0)
-        {
-            return 0f;
-        }
+        return string.Equals(definition.Type, SandstormType, StringComparison.OrdinalIgnoreCase)
+            ? GetSandstormMinDistance(definition)
+            : definition.TriggerDistance;
+    }
 
-        float spacing = GetSandstormSheetSpacing(textureWidth);
-        float maxCameraWidth = MathF.Max(WorldConfig.OverviewWidth, WorldConfig.CloseViewBounds.Width);
-        float slowestLayerSpeedMultiplier = GetSandstormLayerSpeedMultiplier(SandstormLayerCount - 1);
-        float phaseOffset = spacing * SandstormLayerPhaseOffsetFactor * (SandstormLayerCount - 1);
-        float targetTravelDistance = definition.ScrollSpeed * MathF.Max(0.1f, durationSeconds) * slowestLayerSpeedMultiplier;
-        float exitDistanceWithoutDelay = maxCameraWidth
-            + SandstormLeadInPadding
-            + phaseOffset
-            + spacing * (sheetCount - 1)
-            + textureWidth;
-        float additionalDistanceNeeded = MathF.Max(0f, targetTravelDistance - exitDistanceWithoutDelay);
+    private static float GetSandstormMinDistance(WorldEventDefinition definition)
+    {
+        return MathF.Max(0f, definition.MinDistance);
+    }
 
-        return -additionalDistanceNeeded / slowestLayerSpeedMultiplier;
+    private static float GetSandstormMaxDistance(WorldEventDefinition definition)
+    {
+        return MathF.Max(GetSandstormMinDistance(definition), definition.MaxDistance);
     }
 
     private static bool ShouldShowSolarInstallButton(WorldEventRuntimeState runtime)
