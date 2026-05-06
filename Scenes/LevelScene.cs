@@ -10,6 +10,7 @@ public class LevelScene : Scene
     private const float DebugSpeedAdjustPerSecond = 240f;
 
     private readonly Camera2D _camera = new();
+    private readonly WorldEventManager _eventManager = new();
     private readonly VehicleEntity _vehicle = new();
     private readonly ThrottleEntity _throttle;
     private readonly FuelDisplayEntity _fuelDisplay;
@@ -70,6 +71,7 @@ public class LevelScene : Scene
     public bool IsPlayerCarryingFuelBarrel => _carriedFuelBarrel != null;
     public Player Player => _player;
     public Rectangle PlayerBounds => _player.GetBounds();
+    public bool IsThrottleLockedByEvent => _eventManager.IsThrottleLocked(_worldScrollX);
 
     public IEnumerable<FuelBarrelEntity> GetFuelBarrels()
     {
@@ -120,6 +122,7 @@ public class LevelScene : Scene
             HandleDebugSpeedControls(dt);
         }
 
+        _eventManager.Update(gameTime, _worldScrollX, _camera.ViewBounds, this);
         _worldScrollX += _vehicle.Speed * dt;
 
         _fuelDisplay.Update(gameTime);
@@ -140,6 +143,7 @@ public class LevelScene : Scene
     {
         spriteBatch.Begin(transformMatrix: _camera.GetViewMatrix(), samplerState: SamplerState.PointClamp);
         DrawBackground(spriteBatch);
+        _eventManager.DrawWorld(spriteBatch, _camera.ViewBounds);
         _ground.Draw(spriteBatch);
         _vehicle.Draw(spriteBatch);
         _throttle.Draw(spriteBatch);
@@ -153,6 +157,7 @@ public class LevelScene : Scene
         DrawFuelBarrels(spriteBatch, carriedOnly: false);
         DrawFuelBarrels(spriteBatch, carriedOnly: true);
         _player.Draw(spriteBatch);
+        _eventManager.DrawOverlay(spriteBatch, _camera.ViewBounds);
 
         if (Game1.Debug)
         {
@@ -194,6 +199,11 @@ public class LevelScene : Scene
         foreach (Rectangle vehicleRect in _vehicle.GetInteriorCollisionWorldRectangles())
         {
             yield return vehicleRect;
+        }
+
+        foreach (Rectangle rect in _eventManager.GetSolidRectangles())
+        {
+            yield return rect;
         }
 
         Rectangle throttleRect = _throttle.GetCollisionBounds();
@@ -265,6 +275,11 @@ public class LevelScene : Scene
             yield return rect;
         }
 
+        foreach (Rectangle rect in _eventManager.GetDebugRectangles())
+        {
+            yield return rect;
+        }
+
         foreach (Rectangle rect in _player.GetDebugRectangles())
         {
             yield return rect;
@@ -327,9 +342,11 @@ public class LevelScene : Scene
             spriteBatch.DrawString(AssetManager.ArialFont, "Vehicle: " + powerState + "  Speed: " + _vehicle.Speed.ToString("0.0"), new Vector2(20, 116), Color.White);
             spriteBatch.DrawString(AssetManager.ArialFont, "Camera: " + cameraState + "  Carrying: " + carryingState, new Vector2(20, 144), Color.White);
             spriteBatch.DrawString(AssetManager.ArialFont, "Player State: " + _player.CurrentState, new Vector2(20, 172), Color.White);
-            spriteBatch.DrawString(AssetManager.ArialFont, "Debug Speed: [ decrease   ] increase", new Vector2(20, 200), Color.Yellow);
-            spriteBatch.DrawString(AssetManager.ArialFont, "Auto Pickup: " + (_autoPickupModule.IsEnabled ? "On" : "Off") + "  (7 Toggle)", new Vector2(20, 228), Color.Yellow);
-            spriteBatch.DrawString(AssetManager.ArialFont, "Solar: " + (Game1.SolarPanelEnabled ? "On" : "Off") + "  (8 Toggle)", new Vector2(20, 256), Color.Cyan);
+            spriteBatch.DrawString(AssetManager.ArialFont, "Distance: " + _worldScrollX.ToString("0.0"), new Vector2(20, 200), Color.LightGreen);
+            spriteBatch.DrawString(AssetManager.ArialFont, "Debug Speed: [ decrease   ] increase", new Vector2(20, 228), Color.Yellow);
+            spriteBatch.DrawString(AssetManager.ArialFont, "Auto Pickup: " + (_autoPickupModule.IsEnabled ? "On" : "Off") + "  (7 Toggle)", new Vector2(20, 256), Color.Yellow);
+            spriteBatch.DrawString(AssetManager.ArialFont, "Solar: " + (Game1.SolarPanelEnabled ? "On" : "Off") + "  (8 Toggle)", new Vector2(20, 284), Color.Cyan);
+            spriteBatch.DrawString(AssetManager.ArialFont, "Event: " + _eventManager.GetDebugStatus(), new Vector2(20, 312), Color.Orange);
         }
     }
 
@@ -370,7 +387,8 @@ public class LevelScene : Scene
             Throttle = _throttle.CaptureSaveData(),
             FuelPortLit = _fuelPort.IsLit,
             AutoPickupEnabled = _autoPickupModule.IsEnabled,
-            SolarPanelInstalled = Game1.SolarPanelEnabled
+            SolarPanelInstalled = Game1.SolarPanelEnabled,
+            WorldEvents = _eventManager.CaptureSaveData()
         };
 
         for (int i = 0; i < _fuelBarrels.Count; i++)
@@ -412,6 +430,7 @@ public class LevelScene : Scene
         _throttle.RestoreSaveData(data.Throttle);
         _fuelPort.SetLit(data.FuelPortLit);
         _autoPickupModule.SetEnabled(data.AutoPickupEnabled);
+        _eventManager.RestoreSaveData(data.WorldEvents);
 
         _fuelBarrels.Clear();
         for (int i = 0; i < data.FuelBarrels.Count; i++)

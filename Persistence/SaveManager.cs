@@ -17,6 +17,7 @@ public class SaveData
     public bool FuelPortLit { get; set; }
     public bool AutoPickupEnabled { get; set; }
     public bool SolarPanelInstalled { get; set; }
+    public List<WorldEventSaveData> WorldEvents { get; set; } = new();
     public List<FuelBarrelSaveData> FuelBarrels { get; set; } = new();
     public int CarriedFuelBarrelIndex { get; set; } = -1;
 }
@@ -57,6 +58,18 @@ public class FuelBarrelSaveData
 {
     public PositionSpace Space { get; set; }
     public VectorSaveData LocalPosition { get; set; }
+}
+
+public class WorldEventSaveData
+{
+    public string Id { get; set; }
+    public bool HasTriggered { get; set; }
+    public bool IsActive { get; set; }
+    public float RemainingDuration { get; set; }
+    public float ScrollOffset { get; set; }
+    public int SheetCount { get; set; }
+    public int Phase { get; set; }
+    public float AuxiliaryValue { get; set; }
 }
 
 public static class SaveManager

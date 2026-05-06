@@ -30,6 +30,7 @@ public static class WorldConfig
     public static readonly Point FuelButtonSize = new(48, 24);
     public static readonly Point AutoPickupModuleSize = new(64, 64);
     public static readonly Point SolarPanelSize = new(200, 48);
+    public static readonly Point SolarInstallStationSize = new(1480, 980);
     public static readonly Point ThrottleSize = new(12, 36);
 
     public static readonly Rectangle OverviewViewBounds = new(
@@ -52,11 +53,35 @@ public static class WorldConfig
     public static readonly Vector2 AutoPickupStoredBarrelTopLeftLocal = new(780f, 386f);
     public static readonly Vector2 SolarPanelTopLeftLocal = new(370f, 16f);
     public static readonly Vector2 ThrottleIdleTopLeftLocal = new(760f, 168f);
+    public static readonly Vector2 SolarInstallStationButtonTopLeftLocal = new(1200f, 186f);
+    public static readonly Vector2 SolarInstallAnimatedPanelTopLeftLocal = new(980f, -120f);
     public const float FuelButtonPressedDuration = 0.35f;
     public const float FuelButtonCooldownDuration = 0.65f;
     public const float ThrottleTravelDistance = 48f;
     public const int ThrottleInteractionPadding = 20;
+    public const float SolarInstallStationStartScreenX = 3260f;
+    public const float SolarInstallStationDockedScreenX = 1760f;
+    public const float SolarInstallStationAutoMoveSpeed = 110f;
+    public const float SolarInstallStationAutoMoveAcceleration = 180f;
+    public const float SolarInstallPanelDropSpeed = 240f;
     public static readonly Rectangle CloseViewBounds = new((int)(VehiclePosition.X - 140f), (int)(VehiclePosition.Y - 120f), ScreenWidth, ScreenHeight);
     public static readonly Rectangle VehicleCabinBoundsLocal = new(60, -120, 860, 540);
     public static readonly Rectangle FakeGroundLocalRect = new(-20000, OverviewViewBounds.Bottom - 120, 50000, 120);
+    public static readonly Rectangle[] SolarInstallStationCollisionLocalRectangles =
+    {
+        //天花板
+        new Rectangle(1100, 186-24, 200, 24),
+        //最上一层
+        new Rectangle(100, 300, 1200, 24),
+        //楼梯
+        new Rectangle(0, 800, 250, 24),
+        new Rectangle(100, 700, 200, 24),
+        new Rectangle(0, 600, 160, 24),
+        new Rectangle(100, 500, 160, 24),
+        new Rectangle(0, 400, 160, 24),
+        //左墙壁
+        new Rectangle(0, 0, 24, 980),
+        //右墙壁
+        new Rectangle(1456, 0, 24, 100),
+    };
 }

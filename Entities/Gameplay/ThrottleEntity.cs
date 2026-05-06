@@ -41,10 +41,15 @@ public class ThrottleEntity : SpaceEntity
     {
         Rectangle previousBounds = GetBounds();
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        bool isLockedByEvent = _scene is LevelScene throttleScene && throttleScene.IsThrottleLockedByEvent;
         bool hasFuel = _vehicle.Fuel > 0f;
-        bool inputPush = IsPushInputActive();
+        bool inputPush = !isLockedByEvent && IsPushInputActive();
 
-        if (_vehicle.HandbrakeActive)
+        if (isLockedByEvent)
+        {
+            ForceFastReturn();
+        }
+        else if (_vehicle.HandbrakeActive)
         {
             ForceFastReturn();
         }
@@ -61,7 +66,8 @@ public class ThrottleEntity : SpaceEntity
         }
 
         bool hasPower = UpdateState(dt, inputPush);
-        _isPlayerPushing = hasFuel
+        _isPlayerPushing = !isLockedByEvent
+            && hasFuel
             && inputPush
             && (_state == ThrottleState.Pushing || _state == ThrottleState.ActiveHold);
         _vehicle.SetPowered(hasPower);

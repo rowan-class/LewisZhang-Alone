@@ -1,0 +1,16 @@
+[
+  {
+    "id": "sandstorm_intro",
+    "type": "sandstorm",
+    "triggerDistance": 4000,
+    "minDurationSeconds": 8.0,
+    "maxDurationSeconds": 14.0,
+    "scrollSpeed": 520.0,
+    "alpha": 0.72
+  },
+  {
+    "id": "solar_install_station_intro",
+    "type": "solar_install_station",
+    "triggerDistance": 200.0
+  }
+]

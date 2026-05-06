@@ -32,7 +32,7 @@ public class VehicleEntity : SpriteEntity
         // new Rectangle(90, 68, 820, 16),
         // 左墙壁：
         new Rectangle(130, 110, 20, 230),
-        new Rectangle(40, 110, 20, 230),
+        new Rectangle(40, 95, 20, 225),
         // 右墙壁：
         new Rectangle(890, 110, 20, 320),
         new Rectangle(910, 110, 20, 320),
@@ -44,6 +44,7 @@ public class VehicleEntity : SpriteEntity
     public bool Powered { get; private set; }
     public bool HandbrakeActive { get; private set; }
     public bool SolarDriveActive { get; private set; }
+    public float BaseSpeed => _speed;
     public float Speed => HandbrakeActive ? 0f : System.MathF.Min(WorldConfig.VehicleMaxSpeed, _speed + GetSolarSpeedBonus());
     public float Fuel => _fuel;
     public float FuelRatio => System.Math.Clamp(_fuel / MaxFuel, 0f, 1f);
@@ -101,6 +102,28 @@ public class VehicleEntity : SpriteEntity
         }
     }
 
+    public void SetBaseSpeed(float speed)
+    {
+        _speed = System.Math.Clamp(speed, 0f, GetMaximumBaseSpeed());
+        if (_speed <= 0f)
+        {
+            HandbrakeActive = false;
+        }
+    }
+
+    public void MoveBaseSpeedTowards(float targetSpeed, float acceleration, float dt)
+    {
+        float maxDelta = System.MathF.Max(0f, acceleration) * System.MathF.Max(0f, dt);
+        float delta = targetSpeed - _speed;
+        if (System.MathF.Abs(delta) <= maxDelta)
+        {
+            SetBaseSpeed(targetSpeed);
+            return;
+        }
+
+        SetBaseSpeed(_speed + System.MathF.Sign(delta) * maxDelta);
+    }
+
     public void AddFuelByRatio(float ratio)
     {
         if (ratio <= 0f)
@@ -148,6 +171,11 @@ public class VehicleEntity : SpriteEntity
         Powered = false;
         SolarDriveActive = false;
         return true;
+    }
+
+    public void ReleaseHandbrake()
+    {
+        HandbrakeActive = false;
     }
 
     public void ToggleSolarDrive()

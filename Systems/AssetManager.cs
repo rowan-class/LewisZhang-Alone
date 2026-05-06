@@ -20,6 +20,7 @@ public enum Art
     FuelButtonPressed,
     Throttle,
     Background,
+    Sandstorm,
     Button,
     pixel
 }
@@ -46,6 +47,7 @@ public static class AssetManager
         textures[Art.FuelButtonPressed] = content.Load<Texture2D>("modules/button/button2");
         textures[Art.Throttle] = content.Load<Texture2D>("modules/throttle");
         textures[Art.Background] = content.Load<Texture2D>("background");
+        textures[Art.Sandstorm] = content.Load<Texture2D>("weather/sandstorm");
         textures[Art.Button] = CreateSolidTexture(graphicsDevice, 120, 40, Color.LightGray);
         textures[Art.pixel] = CreateSolidTexture(graphicsDevice, 1, 1, Color.White);
         ArialFont = content.Load<SpriteFont>("Arial");
