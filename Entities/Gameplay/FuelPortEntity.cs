@@ -8,10 +8,13 @@ public class FuelPortEntity : SpaceEntity
 {
     private const int InteractionPaddingX = 36;
     private const int InteractionPaddingY = 10;
+    private const float DamageBlinkInterval = 0.18f;
 
     private bool _isOpen;
+    private float _damageBlinkTimer;
 
     public bool IsLit { get; private set; }
+    public bool IsDamaged { get; private set; }
 
     public FuelPortEntity()
         : base(PositionSpace.Vehicle, WorldConfig.FuelPortTopLeftLocal, WorldConfig.FuelPortSize)
@@ -21,8 +24,9 @@ public class FuelPortEntity : SpaceEntity
     public override void Update(GameTime gameTime)
     {
         base.Update(gameTime);
+        _damageBlinkTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-        if (_scene is not LevelScene levelScene)
+        if (IsDamaged || _scene is not LevelScene levelScene)
         {
             _isOpen = false;
             return;
@@ -35,12 +39,12 @@ public class FuelPortEntity : SpaceEntity
 
     public override void Draw(SpriteBatch spriteBatch)
     {
-        spriteBatch.Draw(AssetManager.GetTexture(GetCurrentArt()), GetBounds(), Color.White);
+        spriteBatch.Draw(AssetManager.GetTexture(GetCurrentArt()), GetBounds(), GetDamageTint());
     }
 
     public bool TryInsertBarrel(Player player, FuelBarrelEntity barrel)
     {
-        if (player == null || barrel == null || IsLit || !IsPlayerInRange(player.GetBounds()))
+        if (IsDamaged || player == null || barrel == null || IsLit || !IsPlayerInRange(player.GetBounds()))
         {
             return false;
         }
@@ -52,7 +56,7 @@ public class FuelPortEntity : SpaceEntity
 
     public bool TryConsumeCharge()
     {
-        if (!IsLit)
+        if (IsDamaged || !IsLit)
         {
             return false;
         }
@@ -68,6 +72,17 @@ public class FuelPortEntity : SpaceEntity
         {
             _isOpen = false;
         }
+    }
+
+    public void Damage()
+    {
+        IsDamaged = true;
+        _isOpen = false;
+    }
+
+    public void Repair()
+    {
+        IsDamaged = false;
     }
 
     public override IEnumerable<Rectangle> GetDebugRectangles()
@@ -108,5 +123,16 @@ public class FuelPortEntity : SpaceEntity
         }
 
         return _isOpen ? Art.FuelPortOpen : Art.FuelPortClosed;
+    }
+
+    private Color GetDamageTint()
+    {
+        if (!IsDamaged)
+        {
+            return Color.White;
+        }
+
+        int frame = (int)(_damageBlinkTimer / DamageBlinkInterval);
+        return frame % 2 == 0 ? Color.Red : Color.White;
     }
 }

@@ -6,11 +6,20 @@ namespace LewisZhang_Alone;
 
 public class SolarPanelEntity : SpaceEntity
 {
-    private static readonly Color SolarColor = Color.Blue;
+    private const float DamageBlinkInterval = 0.18f;
+    private float _damageBlinkTimer;
+
+    public bool IsDamaged { get; private set; }
 
     public SolarPanelEntity()
         : base(PositionSpace.Vehicle, WorldConfig.SolarPanelTopLeftLocal, WorldConfig.SolarPanelSize)
     {
+    }
+
+    public override void Update(GameTime gameTime)
+    {
+        base.Update(gameTime);
+        _damageBlinkTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
     }
 
     public override void Draw(SpriteBatch spriteBatch)
@@ -20,7 +29,18 @@ public class SolarPanelEntity : SpaceEntity
             return;
         }
 
-        spriteBatch.Draw(AssetManager.GetTexture(Art.pixel), GetBounds(), SolarColor);
+        Art art = Game1.SolarPanelHasEnergy && !IsDamaged ? Art.SolarPanelPowered : Art.SolarPanelUnpowered;
+        spriteBatch.Draw(AssetManager.GetTexture(art), GetBounds(), GetDamageTint());
+    }
+
+    public void Damage()
+    {
+        IsDamaged = true;
+    }
+
+    public void Repair()
+    {
+        IsDamaged = false;
     }
 
     public override IEnumerable<Rectangle> GetDebugRectangles()
@@ -34,5 +54,16 @@ public class SolarPanelEntity : SpaceEntity
         {
             yield return rect;
         }
+    }
+
+    private Color GetDamageTint()
+    {
+        if (!IsDamaged)
+        {
+            return Color.White;
+        }
+
+        int frame = (int)(_damageBlinkTimer / DamageBlinkInterval);
+        return frame % 2 == 0 ? Color.Red : Color.White;
     }
 }

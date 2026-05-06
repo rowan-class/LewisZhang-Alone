@@ -20,16 +20,19 @@ public class ThrottleEntity : SpaceEntity
     private const float FastReturnSpeed = 2.6f;
     private const float PlayerContactOverlap = 2f;
     private const int ContactPadding = 8;
+    private const float DamageBlinkInterval = 0.18f;
 
     private readonly VehicleEntity _vehicle;
     private ThrottleState _state = ThrottleState.Idle;
     private float _leverPosition;
     private float _holdTimer;
     private bool _isPlayerPushing;
+    private float _damageBlinkTimer;
 
     public ThrottleState State => _state;
     public float LeverPosition => _leverPosition;
     public bool IsPlayerPushing => _isPlayerPushing;
+    public bool IsDamaged { get; private set; }
 
     public ThrottleEntity(VehicleEntity vehicle)
         : base(PositionSpace.Vehicle, WorldConfig.ThrottleIdleTopLeftLocal, WorldConfig.ThrottleSize)
@@ -41,11 +44,19 @@ public class ThrottleEntity : SpaceEntity
     {
         Rectangle previousBounds = GetBounds();
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        _damageBlinkTimer += dt;
         bool isLockedByEvent = _scene is LevelScene throttleScene && throttleScene.IsThrottleLockedByEvent;
         bool hasFuel = _vehicle.Fuel > 0f;
-        bool inputPush = !isLockedByEvent && IsPushInputActive();
+        bool inputPush = !IsDamaged && !isLockedByEvent && IsPushInputActive();
 
-        if (isLockedByEvent)
+        if (IsDamaged)
+        {
+            if (_state != ThrottleState.FastReturn && _state != ThrottleState.Idle)
+            {
+                ForceFastReturn();
+            }
+        }
+        else if (isLockedByEvent)
         {
             ForceFastReturn();
         }
@@ -65,8 +76,9 @@ public class ThrottleEntity : SpaceEntity
             _state = ThrottleState.Pushing;
         }
 
-        bool hasPower = UpdateState(dt, inputPush);
-        _isPlayerPushing = !isLockedByEvent
+        bool hasPower = UpdateState(dt, inputPush) && !IsDamaged;
+        _isPlayerPushing = !IsDamaged
+            && !isLockedByEvent
             && hasFuel
             && inputPush
             && (_state == ThrottleState.Pushing || _state == ThrottleState.ActiveHold);
@@ -77,7 +89,7 @@ public class ThrottleEntity : SpaceEntity
 
     public override void Draw(SpriteBatch spriteBatch)
     {
-        spriteBatch.Draw(AssetManager.GetTexture(Art.Throttle), GetBounds(), Color.White);
+        spriteBatch.Draw(AssetManager.GetTexture(Art.Throttle), GetBounds(), GetDamageTint());
     }
 
     public Rectangle GetCollisionBounds()
@@ -90,6 +102,18 @@ public class ThrottleEntity : SpaceEntity
         _holdTimer = 0f;
         _isPlayerPushing = false;
         _state = _leverPosition > 0f ? ThrottleState.FastReturn : ThrottleState.Idle;
+    }
+
+    public void Damage()
+    {
+        IsDamaged = true;
+        ForceFastReturn();
+        _vehicle.SetPowered(false);
+    }
+
+    public void Repair()
+    {
+        IsDamaged = false;
     }
 
     public ThrottleSaveData CaptureSaveData()
@@ -122,8 +146,11 @@ public class ThrottleEntity : SpaceEntity
             yield return rect;
         }
 
-        yield return GetPushContactBounds();
-        yield return GetInteractionBounds();
+        if (!IsDamaged)
+        {
+            yield return GetPushContactBounds();
+            yield return GetInteractionBounds();
+        }
     }
 
     private bool UpdateState(float dt, bool inputPush)
@@ -317,5 +344,16 @@ public class ThrottleEntity : SpaceEntity
             (int)System.MathF.Round(worldTopLeft.Y),
             WorldConfig.ThrottleSize.X + (int)WorldConfig.ThrottleTravelDistance + padding * 2,
             WorldConfig.ThrottleSize.Y + padding * 2);
+    }
+
+    private Color GetDamageTint()
+    {
+        if (!IsDamaged)
+        {
+            return Color.White;
+        }
+
+        int frame = (int)(_damageBlinkTimer / DamageBlinkInterval);
+        return frame % 2 == 0 ? Color.Red : Color.White;
     }
 }

@@ -53,7 +53,7 @@ public class Player : PhysicsEntity
         }
 
         _isMovingHorizontally = movementInput != 0f;
-        _isCarrying = levelScene.IsPlayerCarryingFuelBarrel;
+        _isCarrying = levelScene.IsPlayerCarryingItem;
 
         if (movementInput > 0f)
         {

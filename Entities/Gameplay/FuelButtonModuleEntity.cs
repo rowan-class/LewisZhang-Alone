@@ -9,6 +9,7 @@ public class FuelButtonModuleEntity : SpaceEntity
     private const float RefuelRatio = 0.3f;
     private const int TriggerHeight = 12;
     private const int TriggerInsetX = 6;
+    private const float DamageBlinkInterval = 0.18f;
 
     private readonly VehicleEntity _vehicle;
     private readonly FuelPortEntity _fuelPort;
@@ -16,6 +17,7 @@ public class FuelButtonModuleEntity : SpaceEntity
     private bool _wasHeadContactLastFrame;
     private float _pressedVisualTimer;
     private float _cooldownTimer;
+    private float _damageBlinkTimer;
 
     public FuelButtonModuleEntity(VehicleEntity vehicle, FuelPortEntity fuelPort)
         : base(PositionSpace.Vehicle, WorldConfig.FuelButtonTopLeftLocal, WorldConfig.FuelButtonSize)
@@ -30,8 +32,9 @@ public class FuelButtonModuleEntity : SpaceEntity
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         _pressedVisualTimer = System.MathF.Max(0f, _pressedVisualTimer - dt);
         _cooldownTimer = System.MathF.Max(0f, _cooldownTimer - dt);
+        _damageBlinkTimer += dt;
 
-        if (_scene is not LevelScene levelScene)
+        if (_fuelPort.IsDamaged || _scene is not LevelScene levelScene)
         {
             _isHeadContactActive = false;
             _wasHeadContactLastFrame = false;
@@ -56,7 +59,7 @@ public class FuelButtonModuleEntity : SpaceEntity
     public override void Draw(SpriteBatch spriteBatch)
     {
         Art art = _pressedVisualTimer > 0f ? Art.FuelButtonPressed : Art.FuelButtonIdle;
-        spriteBatch.Draw(AssetManager.GetTexture(art), GetBounds(), Color.White);
+        spriteBatch.Draw(AssetManager.GetTexture(art), GetBounds(), GetDamageTint());
     }
 
     public override IEnumerable<Rectangle> GetDebugRectangles()
@@ -66,7 +69,10 @@ public class FuelButtonModuleEntity : SpaceEntity
             yield return rect;
         }
 
-        yield return GetHeadHitBounds();
+        if (!_fuelPort.IsDamaged)
+        {
+            yield return GetHeadHitBounds();
+        }
     }
 
     private bool IsPressedBy(Player player)
@@ -106,5 +112,16 @@ public class FuelButtonModuleEntity : SpaceEntity
             bounds.Bottom,
             System.Math.Max(1, bounds.Width - TriggerInsetX * 2),
             TriggerHeight);
+    }
+
+    private Color GetDamageTint()
+    {
+        if (!_fuelPort.IsDamaged)
+        {
+            return Color.White;
+        }
+
+        int frame = (int)(_damageBlinkTimer / DamageBlinkInterval);
+        return frame % 2 == 0 ? Color.Red : Color.White;
     }
 }

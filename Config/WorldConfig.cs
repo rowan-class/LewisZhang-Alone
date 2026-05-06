@@ -25,11 +25,12 @@ public static class WorldConfig
     public static readonly Point PlayerSize = new(48, 48);
     public static readonly Point VehicleSize = new(1000, 540);
     public static readonly Point FuelBarrelSize = new(36, 36);
+    public static readonly Point RepairGunSize = FuelBarrelSize;
     public static readonly Point FuelDisplaySize = new(62, 210);
     public static readonly Point FuelPortSize = new(64, 64);
     public static readonly Point FuelButtonSize = new(48, 24);
-    public static readonly Point AutoPickupModuleSize = new(64, 64);
-    public static readonly Point SolarPanelSize = new(200, 48);
+    public static readonly Point AutoPickupModuleSize = new(64, 96);
+    public static readonly Point SolarPanelSize = new(600, 54);
     public static readonly Point SolarInstallStationSize = new(1480, 980);
     public static readonly Point ThrottleSize = new(12, 36);
 
@@ -49,9 +50,9 @@ public static class WorldConfig
     public static readonly Vector2 FuelButtonTopLeftLocal = new(300f, 216f);
     public static readonly Vector2 HandbrakeButtonTopLeftLocal = new(680f, 84f);
     public static readonly Vector2 SolarButtonTopLeftLocal = new(600f, 84f);
-    public static readonly Vector2 AutoPickupModuleTopLeftLocal = new(820f, 358f);
+    public static readonly Vector2 AutoPickupModuleTopLeftLocal = new(820f, 358+16f);
     public static readonly Vector2 AutoPickupStoredBarrelTopLeftLocal = new(780f, 386f);
-    public static readonly Vector2 SolarPanelTopLeftLocal = new(370f, 16f);
+    public static readonly Vector2 SolarPanelTopLeftLocal = new(180f, 6f);
     public static readonly Vector2 ThrottleIdleTopLeftLocal = new(760f, 168f);
     public static readonly Vector2 SolarInstallStationButtonTopLeftLocal = new(1200f, 186f);
     public static readonly Vector2 SolarInstallAnimatedPanelTopLeftLocal = new(980f, -120f);

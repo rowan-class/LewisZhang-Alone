@@ -19,6 +19,9 @@ public enum Art
     FuelButtonIdle,
     FuelButtonPressed,
     Throttle,
+    AutoPickupModule,
+    SolarPanelPowered,
+    SolarPanelUnpowered,
     Background,
     Sandstorm,
     Button,
@@ -46,6 +49,9 @@ public static class AssetManager
         textures[Art.FuelButtonIdle] = content.Load<Texture2D>("modules/button/button1");
         textures[Art.FuelButtonPressed] = content.Load<Texture2D>("modules/button/button2");
         textures[Art.Throttle] = content.Load<Texture2D>("modules/throttle");
+        textures[Art.AutoPickupModule] = content.Load<Texture2D>("modules/suck");
+        textures[Art.SolarPanelPowered] = content.Load<Texture2D>("modules/solar/solarpanel1");
+        textures[Art.SolarPanelUnpowered] = content.Load<Texture2D>("modules/solar/solarpanel2");
         textures[Art.Background] = content.Load<Texture2D>("background");
         textures[Art.Sandstorm] = content.Load<Texture2D>("weather/sandstorm");
         textures[Art.Button] = CreateSolidTexture(graphicsDevice, 120, 40, Color.LightGray);

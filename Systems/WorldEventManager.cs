@@ -11,6 +11,7 @@ public class WorldEventDefinition
 {
     public string Id { get; set; }
     public string Type { get; set; }
+    public string Target { get; set; }
     public float TriggerDistance { get; set; }
     public float MinDistance { get; set; }
     public float MaxDistance { get; set; }
@@ -42,6 +43,10 @@ public class WorldEventManager
 {
     private const string SandstormType = "sandstorm";
     private const string SolarInstallStationType = "solar_install_station";
+    private const string SolarDayType = "solar_day";
+    private const string SolarNightType = "solar_night";
+    private const string ComponentFailureType = "component_failure";
+    private const string RepairGunDropType = "repair_gun_drop";
     private const string ProjectFileName = "LewisZhang-Alone.csproj";
     private const int SandstormLayerCount = 3;
     private const float SandstormLeadInPadding = 120f;
@@ -83,7 +88,7 @@ public class WorldEventManager
 
             if (!runtime.HasTriggered && travelDistance >= GetActivationDistance(definition))
             {
-                Activate(definition, runtime);
+                Activate(definition, runtime, levelScene, cameraViewBounds);
             }
 
             if (!runtime.IsActive)
@@ -102,6 +107,8 @@ public class WorldEventManager
                 UpdateSolarInstallStation(definition, runtime, dt, levelScene);
             }
         }
+
+        UpdateSolarWeatherBlock(levelScene);
     }
 
     public void DrawWorld(SpriteBatch spriteBatch, Rectangle cameraViewBounds)
@@ -308,7 +315,7 @@ public class WorldEventManager
         }
     }
 
-    private void Activate(WorldEventDefinition definition, WorldEventRuntimeState runtime)
+    private void Activate(WorldEventDefinition definition, WorldEventRuntimeState runtime, LevelScene levelScene, Rectangle cameraViewBounds)
     {
         runtime.HasTriggered = true;
         runtime.IsActive = true;
@@ -330,7 +337,78 @@ public class WorldEventManager
             runtime.SheetCount = 0;
             runtime.Phase = (int)SolarInstallStationPhase.Docking;
             runtime.AuxiliaryValue = 0f;
+            return;
         }
+
+        if (string.Equals(definition.Type, SolarDayType, StringComparison.OrdinalIgnoreCase))
+        {
+            SetSolarDaytime(true, levelScene);
+            runtime.IsActive = false;
+            return;
+        }
+
+        if (string.Equals(definition.Type, SolarNightType, StringComparison.OrdinalIgnoreCase))
+        {
+            SetSolarDaytime(false, levelScene);
+            runtime.IsActive = false;
+            return;
+        }
+
+        if (string.Equals(definition.Type, ComponentFailureType, StringComparison.OrdinalIgnoreCase))
+        {
+            levelScene?.DamageComponent(definition.Target);
+            runtime.IsActive = false;
+            return;
+        }
+
+        if (string.Equals(definition.Type, RepairGunDropType, StringComparison.OrdinalIgnoreCase))
+        {
+            float spawnScreenX = cameraViewBounds.Left + cameraViewBounds.Width * 0.75f;
+            levelScene?.SpawnRepairGunDrop(_lastTravelDistance + spawnScreenX);
+            runtime.IsActive = false;
+        }
+    }
+
+    private static void SetSolarDaytime(bool isDaytime, LevelScene levelScene)
+    {
+        Game1.SetSolarPanelDaytime(isDaytime);
+        if (!Game1.SolarPanelHasEnergy)
+        {
+            levelScene?.Vehicle.SetSolarDriveActive(false);
+        }
+    }
+
+    private void UpdateSolarWeatherBlock(LevelScene levelScene)
+    {
+        bool isBlockedBySandstorm = IsSandstormActive();
+        if (Game1.SolarPanelBlockedByWeather == isBlockedBySandstorm)
+        {
+            return;
+        }
+
+        Game1.SetSolarPanelWeatherBlocked(isBlockedBySandstorm);
+        if (!Game1.SolarPanelHasEnergy)
+        {
+            levelScene?.Vehicle.SetSolarDriveActive(false);
+        }
+    }
+
+    private bool IsSandstormActive()
+    {
+        foreach (WorldEventDefinition definition in _definitions)
+        {
+            if (!string.Equals(definition.Type, SandstormType, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (_runtimeStates.TryGetValue(definition.Id, out WorldEventRuntimeState runtime) && runtime.IsActive)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void UpdateSandstorm(WorldEventDefinition definition, WorldEventRuntimeState runtime, float dt, float travelDistance, Rectangle cameraViewBounds)
@@ -516,7 +594,8 @@ public class WorldEventManager
             ? runtime.AuxiliaryValue
             : GetSolarInstallAnimatedPanelStartWorldY(definition);
         Rectangle animatedPanelBounds = GetSolarInstallAnimatedPanelWorldBounds(panelWorldY);
-        spriteBatch.Draw(AssetManager.GetTexture(Art.pixel), animatedPanelBounds, Color.Blue);
+        Art art = Game1.SolarPanelHasEnergy ? Art.SolarPanelPowered : Art.SolarPanelUnpowered;
+        spriteBatch.Draw(AssetManager.GetTexture(art), animatedPanelBounds, Color.White);
     }
 
     private static float GetSandstormSheetSpacing(float textureWidth)

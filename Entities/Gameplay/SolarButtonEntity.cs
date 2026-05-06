@@ -8,22 +8,27 @@ public class SolarButtonEntity : SpaceEntity
 {
     private const int TriggerHeight = 12;
     private const int TriggerInsetX = 6;
+    private const float DamageBlinkInterval = 0.18f;
 
     private readonly VehicleEntity _vehicle;
+    private readonly SolarPanelEntity _solarPanel;
     private bool _isHeadContactActive;
     private bool _wasHeadContactLastFrame;
+    private float _damageBlinkTimer;
 
-    public SolarButtonEntity(VehicleEntity vehicle)
+    public SolarButtonEntity(VehicleEntity vehicle, SolarPanelEntity solarPanel)
         : base(PositionSpace.Vehicle, WorldConfig.SolarButtonTopLeftLocal, WorldConfig.FuelButtonSize)
     {
         _vehicle = vehicle;
+        _solarPanel = solarPanel;
     }
 
     public override void Update(GameTime gameTime)
     {
         base.Update(gameTime);
+        _damageBlinkTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-        if (!Game1.SolarPanelEnabled || _scene is not LevelScene levelScene)
+        if (!Game1.SolarPanelEnabled || !Game1.SolarPanelHasEnergy || _solarPanel.IsDamaged || _scene is not LevelScene levelScene)
         {
             _vehicle.SetSolarDriveActive(false);
             _isHeadContactActive = false;
@@ -48,8 +53,9 @@ public class SolarButtonEntity : SpaceEntity
             return;
         }
 
-        Art art = _vehicle.SolarDriveActive ? Art.FuelButtonPressed : Art.FuelButtonIdle;
-        spriteBatch.Draw(AssetManager.GetTexture(art), GetBounds(), Color.White);
+        Art art = Game1.SolarPanelHasEnergy && !_solarPanel.IsDamaged && _vehicle.SolarDriveActive ? Art.FuelButtonPressed : Art.FuelButtonIdle;
+        Color tint = GetTint();
+        spriteBatch.Draw(AssetManager.GetTexture(art), GetBounds(), tint);
     }
 
     public override IEnumerable<Rectangle> GetDebugRectangles()
@@ -64,7 +70,10 @@ public class SolarButtonEntity : SpaceEntity
             yield return rect;
         }
 
-        yield return GetHeadHitBounds();
+        if (Game1.SolarPanelHasEnergy && !_solarPanel.IsDamaged)
+        {
+            yield return GetHeadHitBounds();
+        }
     }
 
     private bool IsPressedBy(Player player)
@@ -104,5 +113,16 @@ public class SolarButtonEntity : SpaceEntity
             bounds.Bottom,
             System.Math.Max(1, bounds.Width - TriggerInsetX * 2),
             TriggerHeight);
+    }
+
+    private Color GetTint()
+    {
+        if (_solarPanel.IsDamaged)
+        {
+            int frame = (int)(_damageBlinkTimer / DamageBlinkInterval);
+            return frame % 2 == 0 ? Color.Red : Color.White;
+        }
+
+        return Game1.SolarPanelHasEnergy ? Color.White : Color.Gray;
     }
 }

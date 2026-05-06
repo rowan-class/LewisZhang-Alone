@@ -2,14 +2,47 @@
   {
     "id": "sandstorm_intro",
     "type": "sandstorm",
-    "minDistance": 4000.0,
-    "maxDistance": 5600.0,
+    "minDistance": 1000.0,
+    "maxDistance": 2000.0,
     "scrollSpeed": 520.0,
     "alpha": 0.72
   },
   {
     "id": "solar_install_station_intro",
     "type": "solar_install_station",
-    "triggerDistance": 200.0
+    "triggerDistance": 200000.0
+  },
+  {
+    "id": "fuel_port_failure_intro",
+    "type": "component_failure",
+    "target": "fuel_port",
+    "triggerDistance": 3000.0
+  },
+  {
+    "id": "repair_gun_intro",
+    "type": "repair_gun_drop",
+    "triggerDistance": 3100.0
+  },
+  {
+    "id": "throttle_failure_intro",
+    "type": "component_failure",
+    "target": "throttle",
+    "triggerDistance": 6000.0
+  },
+  {
+    "id": "solar_night_intro",
+    "type": "solar_night",
+    "triggerDistance": 400000.0
+  },
+  {
+    "id": "solar_day_intro",
+    "type": "solar_day",
+    "triggerDistance": 620000.0
+  },
+  {
+    "id": "solar_failure_intro",
+    "type": "component_failure",
+    "target": "solar_panel",
+    "triggerDistance": 201000.0
   }
 ]

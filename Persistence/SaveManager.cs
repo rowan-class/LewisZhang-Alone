@@ -16,10 +16,19 @@ public class SaveData
     public ThrottleSaveData Throttle { get; set; }
     public bool FuelPortLit { get; set; }
     public bool AutoPickupEnabled { get; set; }
+    public bool AutoPickupDamaged { get; set; } = true;
     public bool SolarPanelInstalled { get; set; }
+    public bool SolarPanelHasEnergy { get; set; } = true;
+    public bool SolarPanelIsDaytime { get; set; } = true;
+    public bool SolarPanelBlockedByWeather { get; set; }
+    public bool FuelPortDamaged { get; set; }
+    public bool SolarPanelDamaged { get; set; }
+    public bool ThrottleDamaged { get; set; }
     public List<WorldEventSaveData> WorldEvents { get; set; } = new();
     public List<FuelBarrelSaveData> FuelBarrels { get; set; } = new();
+    public List<RepairGunSaveData> RepairGuns { get; set; } = new();
     public int CarriedFuelBarrelIndex { get; set; } = -1;
+    public int CarriedRepairGunIndex { get; set; } = -1;
 }
 
 public class VectorSaveData
@@ -55,6 +64,12 @@ public class ThrottleSaveData
 }
 
 public class FuelBarrelSaveData
+{
+    public PositionSpace Space { get; set; }
+    public VectorSaveData LocalPosition { get; set; }
+}
+
+public class RepairGunSaveData
 {
     public PositionSpace Space { get; set; }
     public VectorSaveData LocalPosition { get; set; }

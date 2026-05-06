@@ -25,7 +25,7 @@ public class VehicleEntity : SpriteEntity
         new Rectangle(90+420, 326, 400, 12),
         // 三层：
         new Rectangle(90, 204, 320, 12),
-        new Rectangle(90+520, 204, 320, 12),
+        new Rectangle(90+535, 204, 300, 12),
         // 车顶：
         new Rectangle(60, 64, 820, 20),
         // new Rectangle(60+360, 100, 120, 12),
@@ -156,7 +156,7 @@ public class VehicleEntity : SpriteEntity
         _speed = System.Math.Clamp(data.Speed, 0f, WorldConfig.VehicleMaxSpeed);
         _fuel = System.Math.Clamp(data.Fuel, 0f, MaxFuel);
         HandbrakeActive = data.HandbrakeActive && _speed > 0f;
-        SolarDriveActive = Game1.SolarPanelEnabled && data.SolarDriveActive && !HandbrakeActive;
+        SolarDriveActive = Game1.SolarPanelEnabled && Game1.SolarPanelHasEnergy && data.SolarDriveActive && !HandbrakeActive;
         Powered = !HandbrakeActive && data.Powered && _fuel > 0f;
     }
 
@@ -180,7 +180,7 @@ public class VehicleEntity : SpriteEntity
 
     public void ToggleSolarDrive()
     {
-        if (!Game1.SolarPanelEnabled)
+        if (!Game1.SolarPanelEnabled || !Game1.SolarPanelHasEnergy)
         {
             SolarDriveActive = false;
             return;
@@ -191,7 +191,7 @@ public class VehicleEntity : SpriteEntity
 
     public void SetSolarDriveActive(bool isActive)
     {
-        SolarDriveActive = Game1.SolarPanelEnabled && isActive && !HandbrakeActive;
+        SolarDriveActive = Game1.SolarPanelEnabled && Game1.SolarPanelHasEnergy && isActive && !HandbrakeActive;
     }
 
     private void ConsumeFuel(float amount)
@@ -206,7 +206,7 @@ public class VehicleEntity : SpriteEntity
 
     private float GetSolarSpeedBonus()
     {
-        return Game1.SolarPanelEnabled && SolarDriveActive ? SolarSpeedBonus : 0f;
+        return Game1.SolarPanelEnabled && Game1.SolarPanelHasEnergy && SolarDriveActive ? SolarSpeedBonus : 0f;
     }
 
     private float GetMaximumBaseSpeed()

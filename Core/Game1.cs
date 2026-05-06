@@ -12,6 +12,9 @@ public class Game1 : Game
     public static bool Debug = true;
     // Flip this to show / enable the solar module.
     public static bool SolarPanelEnabled = false;
+    public static bool SolarPanelHasEnergy = true;
+    public static bool SolarPanelIsDaytime = true;
+    public static bool SolarPanelBlockedByWeather = false;
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _entityBatch;
 
@@ -28,6 +31,37 @@ public class Game1 : Game
 
         _graphics.PreferredBackBufferWidth = (int)ScreenSize.X;
         _graphics.PreferredBackBufferHeight = (int)ScreenSize.Y;
+    }
+
+    public static void ResetSolarPanelEnergyState()
+    {
+        SolarPanelIsDaytime = true;
+        SolarPanelBlockedByWeather = false;
+        RefreshSolarPanelEnergy();
+    }
+
+    public static void SetSolarPanelDaytime(bool isDaytime)
+    {
+        SolarPanelIsDaytime = isDaytime;
+        RefreshSolarPanelEnergy();
+    }
+
+    public static void SetSolarPanelWeatherBlocked(bool isBlocked)
+    {
+        SolarPanelBlockedByWeather = isBlocked;
+        RefreshSolarPanelEnergy();
+    }
+
+    public static void RestoreSolarPanelEnergyState(bool isDaytime, bool isBlockedByWeather)
+    {
+        SolarPanelIsDaytime = isDaytime;
+        SolarPanelBlockedByWeather = isBlockedByWeather;
+        RefreshSolarPanelEnergy();
+    }
+
+    private static void RefreshSolarPanelEnergy()
+    {
+        SolarPanelHasEnergy = SolarPanelIsDaytime && !SolarPanelBlockedByWeather;
     }
 
     protected override void Initialize()
