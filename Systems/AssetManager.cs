@@ -25,6 +25,8 @@ public enum Art
     ApolloLowerHalf,
     ApolloUpperHalf,
     Background,
+    BackgroundDay,
+    BackgroundNight,
     Sandstorm,
     ProfileHouston,
     ProfilePlayer,
@@ -58,7 +60,9 @@ public static class AssetManager
         textures[Art.SolarPanelUnpowered] = content.Load<Texture2D>("modules/solar/solarpanel2");
         textures[Art.ApolloLowerHalf] = content.Load<Texture2D>("apollolowerhalf");
         textures[Art.ApolloUpperHalf] = content.Load<Texture2D>("apolloupperhalf");
-        textures[Art.Background] = content.Load<Texture2D>("background");
+        textures[Art.Background] = content.Load<Texture2D>("background/background_day");
+        textures[Art.BackgroundDay] = content.Load<Texture2D>("background/background_day");
+        textures[Art.BackgroundNight] = content.Load<Texture2D>("background/background_night");
         textures[Art.Sandstorm] = content.Load<Texture2D>("weather/sandstorm");
         textures[Art.ProfileHouston] = content.Load<Texture2D>("profile/houston");
         textures[Art.ProfilePlayer] = content.Load<Texture2D>("profile/player");

@@ -85,6 +85,8 @@ public class WorldEventManager
     private const float LightningBoltMinVisibleWindow = 0.22f;
     private const float LightningBoltMaxVisibleWindow = 0.42f;
     private const float SolarInstallStationLeadInDistance = 1600f;
+    private const float SolarInstallStationDockingSnapDistance = 8f;
+    private const float RepairGunDropSpawnPadding = 160f;
     private const int ButtonTriggerHeight = 12;
     private const int ButtonTriggerInsetX = 6;
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
@@ -467,7 +469,7 @@ public class WorldEventManager
 
         if (string.Equals(definition.Type, RepairGunDropType, StringComparison.OrdinalIgnoreCase))
         {
-            float spawnScreenX = cameraViewBounds.Left + cameraViewBounds.Width * 0.75f;
+            float spawnScreenX = cameraViewBounds.Right + RepairGunDropSpawnPadding;
             levelScene?.SpawnRepairGunDrop(levelScene.WorldScrollX + spawnScreenX);
             runtime.IsActive = false;
             return;
@@ -482,7 +484,7 @@ public class WorldEventManager
 
         if (string.Equals(definition.Type, FinalWalkType, StringComparison.OrdinalIgnoreCase))
         {
-            levelScene?.ChangeScene("finalWalk");
+            levelScene?.BeginFinalWalkTransition();
             runtime.IsActive = false;
             return;
         }
@@ -652,6 +654,13 @@ public class WorldEventManager
                 float targetTravelDistance = GetSolarInstallStationDockedTravelDistance(definition);
                 if (_lastTravelDistance >= targetTravelDistance)
                 {
+                    vehicle.SetBaseSpeed(0f);
+                    runtime.Phase = (int)SolarInstallStationPhase.Ready;
+                }
+                else if (targetTravelDistance - _lastTravelDistance <= SolarInstallStationDockingSnapDistance)
+                {
+                    _lastTravelDistance = targetTravelDistance;
+                    levelScene.SnapStoryDistance(targetTravelDistance);
                     vehicle.SetBaseSpeed(0f);
                     runtime.Phase = (int)SolarInstallStationPhase.Ready;
                 }

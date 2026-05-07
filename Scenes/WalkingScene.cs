@@ -26,18 +26,29 @@ public class WalkingScene : Scene, IPlayerScene
     private const float StormScrollSpeed = 760f;
     private const float StormSheetScreenWidth = 1800f;
     private const int IntroWorldWidth = 3200;
-    private const int FinalWorldWidth = 3000;
+    private const int FinalWorldWidth = 5200;
     private const int GroundHeight = 160;
 
     private static readonly Vector2 IntroPlayerStart = new(160f, WorldConfig.FakeGroundLocalRect.Y - 48f);
     private static readonly Vector2 IntroVehiclePosition = new(1900f, WorldConfig.FakeGroundLocalRect.Y - 540f);
+    private static readonly Vector2 FinalVehiclePosition = new(180f, WorldConfig.FakeGroundLocalRect.Y - 540f);
     private static readonly Vector2 FinalPlayerStart = new(160f, WorldConfig.FakeGroundLocalRect.Y - 48f);
-    private static readonly Vector2 FinalCapsulePosition = new(1850f, WorldConfig.FakeGroundLocalRect.Y - 256f);
+    private static readonly Vector2 FinalCapsulePosition = new(3700f, WorldConfig.FakeGroundLocalRect.Y - 256f);
+    private static readonly Rectangle[] FinalVehiclePlatformLocalRectangles =
+    {
+        new Rectangle(24, 422, 900, 16),
+        new Rectangle(90, 326, 320, 12),
+        new Rectangle(510, 326, 400, 12),
+        new Rectangle(90, 204, 320, 12),
+        new Rectangle(625, 204, 300, 12),
+        new Rectangle(60, 64, 820, 20),
+    };
 
     private readonly WalkingSceneMode _mode;
     private readonly TextBoxEntity _textBox = new();
     private readonly Player _player;
     private readonly VehicleEntity _introVehicle;
+    private readonly VehicleEntity _finalVehicle;
     private readonly List<WalkingDialogueDefinition> _dialogueDefinitions;
     private readonly HashSet<string> _triggeredDialogueIds = new();
     private readonly int _worldWidth;
@@ -67,10 +78,17 @@ public class WalkingScene : Scene, IPlayerScene
             _introVehicle = new VehicleEntity();
             _introVehicle.SetPosition(IntroVehiclePosition);
             _introVehicle.SetScene(this);
+            _finalVehicle = null;
         }
         else
         {
-            _player = new Player(FinalPlayerStart);
+            _introVehicle = null;
+            LevelToFinalWalkTransition transition = SceneTransitionContext.ConsumeLevelToFinalWalk();
+            _finalVehicle = new VehicleEntity();
+            _finalVehicle.SetPosition(FinalVehiclePosition);
+            _finalVehicle.SetScene(this);
+            _player = new Player(GetFinalPlayerStartPosition(transition));
+
             StartTriggeredDialogue(SceneStartTrigger);
         }
 
@@ -100,6 +118,11 @@ public class WalkingScene : Scene, IPlayerScene
 
         if (_mode == WalkingSceneMode.Final)
         {
+            foreach (Rectangle rect in GetFinalVehiclePlatformWorldRectangles())
+            {
+                yield return rect;
+            }
+
             yield return GetCapsuleLowerCollisionBounds();
         }
     }
@@ -154,6 +177,7 @@ public class WalkingScene : Scene, IPlayerScene
         }
         else
         {
+            _finalVehicle.Draw(spriteBatch);
             DrawCapsule(spriteBatch);
         }
 
@@ -195,6 +219,11 @@ public class WalkingScene : Scene, IPlayerScene
         }
         else
         {
+            foreach (Rectangle rect in GetFinalVehiclePlatformWorldRectangles())
+            {
+                yield return rect;
+            }
+
             yield return GetCapsuleLowerCollisionBounds();
             yield return GetCapsuleEntranceBounds();
         }
@@ -211,6 +240,10 @@ public class WalkingScene : Scene, IPlayerScene
 
         if (_player.GetBounds().Right >= GetIntroVehicleBarrierBounds().Left)
         {
+            SceneTransitionContext.IntroToLevel = new IntroToLevelTransition
+            {
+                PlayerVehicleLocalPosition = _player.Position - IntroVehiclePosition
+            };
             _pendingScene = "level1";
             if (!StartTriggeredDialogue(VehicleReachedTrigger))
             {
@@ -354,6 +387,28 @@ public class WalkingScene : Scene, IPlayerScene
         return new Rectangle(lower.X + local.X, lower.Y + local.Y, local.Width, local.Height);
     }
 
+    private static Vector2 GetFinalPlayerStartPosition(LevelToFinalWalkTransition transition)
+    {
+        if (transition == null)
+        {
+            return FinalPlayerStart;
+        }
+
+        return FinalVehiclePosition + transition.PlayerVehicleLocalPosition;
+    }
+
+    private static IEnumerable<Rectangle> GetFinalVehiclePlatformWorldRectangles()
+    {
+        foreach (Rectangle localRect in FinalVehiclePlatformLocalRectangles)
+        {
+            yield return new Rectangle(
+                (int)MathF.Round(FinalVehiclePosition.X) + localRect.X,
+                (int)MathF.Round(FinalVehiclePosition.Y) + localRect.Y,
+                localRect.Width,
+                localRect.Height);
+        }
+    }
+
     private Rectangle GetCapsuleEntranceBounds()
     {
         Rectangle upper = GetCapsuleUpperBounds();
@@ -363,11 +418,7 @@ public class WalkingScene : Scene, IPlayerScene
 
     private void DrawBackground(SpriteBatch spriteBatch)
     {
-        Texture2D background = AssetManager.GetTexture(Art.Background);
-        for (int x = 0; x < _worldWidth + background.Width; x += background.Width)
-        {
-            spriteBatch.Draw(background, new Rectangle(x, 0, background.Width, WorldConfig.WorldHeight), Color.White);
-        }
+        BackgroundRenderer.DrawLooping(spriteBatch, 0f, _worldWidth);
     }
 
     private static void DrawGround(SpriteBatch spriteBatch)

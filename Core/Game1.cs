@@ -8,6 +8,8 @@ namespace LewisZhang_Alone;
 
 public class Game1 : Game
 {
+    private const float BackgroundCrossfadeDuration = 2.4f;
+
     // Default debug state. Press F3 in-game to toggle collision bounds.
     public static bool Debug = true;
     // Flip this to show / enable the solar module.
@@ -15,10 +17,15 @@ public class Game1 : Game
     public static bool SolarPanelHasEnergy = true;
     public static bool SolarPanelIsDaytime = true;
     public static bool SolarPanelBlockedByWeather = false;
+    private static float _backgroundNightBlend;
+    private static float _backgroundFadeStartBlend;
+    private static float _backgroundFadeTargetBlend;
+    private static float _backgroundFadeTimer;
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _entityBatch;
 
     public static Vector2 ScreenSize = WorldConfig.ScreenSize;
+    public static float BackgroundNightBlend => _backgroundNightBlend;
 
     private Dictionary<string, Func<Scene>> _sceneFactories;
     private Scene _currentScene;
@@ -37,11 +44,17 @@ public class Game1 : Game
     {
         SolarPanelIsDaytime = true;
         SolarPanelBlockedByWeather = false;
+        SetBackgroundDaytimeImmediate(true);
         RefreshSolarPanelEnergy();
     }
 
     public static void SetSolarPanelDaytime(bool isDaytime)
     {
+        if (SolarPanelIsDaytime != isDaytime)
+        {
+            BeginBackgroundCrossfade(isDaytime);
+        }
+
         SolarPanelIsDaytime = isDaytime;
         RefreshSolarPanelEnergy();
     }
@@ -56,12 +69,47 @@ public class Game1 : Game
     {
         SolarPanelIsDaytime = isDaytime;
         SolarPanelBlockedByWeather = isBlockedByWeather;
+        SetBackgroundDaytimeImmediate(isDaytime);
         RefreshSolarPanelEnergy();
     }
 
     private static void RefreshSolarPanelEnergy()
     {
         SolarPanelHasEnergy = SolarPanelIsDaytime && !SolarPanelBlockedByWeather;
+    }
+
+    private static void BeginBackgroundCrossfade(bool isDaytime)
+    {
+        _backgroundFadeStartBlend = _backgroundNightBlend;
+        _backgroundFadeTargetBlend = isDaytime ? 0f : 1f;
+        _backgroundFadeTimer = BackgroundCrossfadeDuration;
+    }
+
+    private static void SetBackgroundDaytimeImmediate(bool isDaytime)
+    {
+        _backgroundNightBlend = isDaytime ? 0f : 1f;
+        _backgroundFadeStartBlend = _backgroundNightBlend;
+        _backgroundFadeTargetBlend = _backgroundNightBlend;
+        _backgroundFadeTimer = 0f;
+    }
+
+    private static void UpdateBackgroundCrossfade(GameTime gameTime)
+    {
+        if (_backgroundFadeTimer <= 0f)
+        {
+            return;
+        }
+
+        float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        _backgroundFadeTimer = MathF.Max(0f, _backgroundFadeTimer - dt);
+        float progress = 1f - MathHelper.Clamp(_backgroundFadeTimer / BackgroundCrossfadeDuration, 0f, 1f);
+        float smoothProgress = MathHelper.SmoothStep(0f, 1f, progress);
+        _backgroundNightBlend = MathHelper.Lerp(_backgroundFadeStartBlend, _backgroundFadeTargetBlend, smoothProgress);
+
+        if (_backgroundFadeTimer <= 0f)
+        {
+            _backgroundNightBlend = _backgroundFadeTargetBlend;
+        }
     }
 
     protected override void Initialize()
@@ -109,6 +157,7 @@ public class Game1 : Game
             Debug = !Debug;
         }
 
+        UpdateBackgroundCrossfade(gameTime);
         _currentScene.Update(gameTime);
 
         if (_currentScene.finished)

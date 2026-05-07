@@ -86,7 +86,7 @@ public static class WorldConfig
         new Rectangle(100, 500, 160, 24),
         new Rectangle(0, 400, 160, 24),
         //左墙壁
-        new Rectangle(0, 0, 24, 980),
+        new Rectangle(0, 0, 24, 980-100),
         //右墙壁
         new Rectangle(1456, 0, 24, 100),
     };

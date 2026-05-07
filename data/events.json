@@ -17,12 +17,12 @@
   {
     "id": "solar_install_station",
     "type": "solar_install_station",
-    "triggerDistance": 2300.0
+    "triggerDistance": 4300.0
   },
   {
     "id": "post_solar_station",
     "type": "dialogue",
-    "triggerDistance": 4050.0,
+    "triggerDistance": 6425.0,
     "dialogue": [
       {
         "speaker": "houston",
@@ -33,20 +33,20 @@
   {
     "id": "sandstorm_after_station",
     "type": "sandstorm",
-    "minDistance": 4300.0,
-    "maxDistance": 5000.0,
+    "minDistance": 11300.0,
+    "maxDistance": 12750.0,
     "scrollSpeed": 560.0,
     "alpha": 0.74
   },
   {
     "id": "solar_night_1",
     "type": "solar_night",
-    "triggerDistance": 5400.0
+    "triggerDistance": 15150.0
   },
   {
     "id": "night_warning",
     "type": "dialogue",
-    "triggerDistance": 5425.0,
+    "triggerDistance": 15237.5,
     "dialogue": [
       {
         "speaker": "houston",
@@ -55,15 +55,20 @@
     ]
   },
   {
+    "id": "solar_night_1",
+    "type": "solar_night",
+    "triggerDistance": 15150.0
+  },
+  {
     "id": "repair_gun_drop",
     "type": "repair_gun_drop",
-    "triggerDistance": 5600.0
+    "triggerDistance": 15850.0
   },
   {
     "id": "lightning_1",
     "type": "lightning",
-    "minDistance": 6400.0,
-    "maxDistance": 7100.0,
+    "minDistance": 18650.0,
+    "maxDistance": 21100.0,
     "minInterval": 0.5,
     "maxInterval": 1.7,
     "flashDuration": 0.22,
@@ -71,22 +76,35 @@
     "alpha": 0.82
   },
   {
+    "id": "throttle_failure_before_return_plan",
+    "type": "component_failure",
+    "target": "throttle",
+    "triggerDistance": 20350.0
+  },
+  {
     "id": "solar_day_1",
     "type": "solar_day",
-    "triggerDistance": 7600.0
+    "triggerDistance": 22850.0
+  },
+
+  {
+    "id": "fuel_port_failure_before_return_plan",
+    "type": "component_failure",
+    "target": "fuel_port",
+    "triggerDistance": 25500.0
   },
   {
     "id": "sandstorm_return_plan",
     "type": "sandstorm",
-    "minDistance": 8000.0,
-    "maxDistance": 8700.0,
+    "minDistance": 24250.0,
+    "maxDistance": 26700.0,
     "scrollSpeed": 600.0,
     "alpha": 0.78
   },
   {
     "id": "return_plan_dialogue",
     "type": "dialogue",
-    "triggerDistance": 8750.0,
+    "triggerDistance": 26875.0,
     "dialogue": [
       {
         "speaker": "houston",
@@ -105,13 +123,13 @@
   {
     "id": "solar_night_2",
     "type": "solar_night",
-    "triggerDistance": 9300.0
+    "triggerDistance": 28800.0
   },
   {
     "id": "lightning_breaks_repair_gun",
     "type": "lightning",
-    "minDistance": 9700.0,
-    "maxDistance": 10300.0,
+    "minDistance": 32200.0,
+    "maxDistance": 33300.0,
     "minInterval": 0.45,
     "maxInterval": 1.5,
     "flashDuration": 0.26,
@@ -122,12 +140,12 @@
     "id": "repair_gun_failure",
     "type": "component_failure",
     "target": "repair_gun",
-    "triggerDistance": 9720.0
+    "triggerDistance": 33270.0
   },
   {
     "id": "repair_gun_failure_dialogue",
     "type": "dialogue",
-    "triggerDistance": 9760.0,
+    "triggerDistance": 33410.0,
     "dialogue": [
       {
         "speaker": "houston",
@@ -142,13 +160,13 @@
   {
     "id": "solar_day_2",
     "type": "solar_day",
-    "triggerDistance": 10600.0
+    "triggerDistance": 33350.0
   },
   {
     "id": "sandstorm_breaks_fuel_port",
     "type": "sandstorm",
-    "minDistance": 11100.0,
-    "maxDistance": 11700.0,
+    "minDistance": 35100.0,
+    "maxDistance": 37200.0,
     "scrollSpeed": 620.0,
     "alpha": 0.8
   },
@@ -156,16 +174,16 @@
     "id": "fuel_port_failure",
     "type": "component_failure",
     "target": "fuel_port",
-    "triggerDistance": 11120.0
+    "triggerDistance": 45000.0
   },
   {
     "id": "fuel_port_failure_dialogue",
     "type": "dialogue",
-    "triggerDistance": 11750.0,
+    "triggerDistance": 45500.0,
     "dialogue": [
       {
         "speaker": "houston",
-        "text": "Fuel port is gone. Do not waste time trying to feed the tank."
+        "text": "Fuel port is gone because of the sandstorm"
       },
       {
         "speaker": "houston",
@@ -176,7 +194,7 @@
   {
     "id": "final_sandstorm",
     "type": "sandstorm",
-    "minDistance": 12300.0,
+    "minDistance": 48000.0,
     "duration": 8.0,
     "scrollSpeed": 760.0,
     "alpha": 0.9
@@ -185,17 +203,17 @@
     "id": "final_throttle_failure",
     "type": "component_failure",
     "target": "throttle",
-    "triggerDistance": 12450.0
+    "triggerDistance": 48100.0
   },
   {
     "id": "final_solar_failure",
     "type": "component_failure",
     "target": "solar_panel",
-    "triggerDistance": 12450.0
+    "triggerDistance": 48200.0
   },
   {
     "id": "final_walk_scene",
     "type": "final_walk",
-    "triggerDistance": 12450.0
+    "triggerDistance": 48200.0
   }
 ]

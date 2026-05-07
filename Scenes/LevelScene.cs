@@ -75,6 +75,7 @@ public class LevelScene : Scene, IPlayerScene
         }
         else
         {
+            ApplyIntroTransition();
             SpawnInitialFuelBarrels();
         }
 
@@ -253,6 +254,11 @@ public class LevelScene : Scene, IPlayerScene
         };
     }
 
+    public void SnapStoryDistance(float storyDistance)
+    {
+        _worldScrollX = MathF.Max(0f, storyDistance);
+    }
+
     public IEnumerable<Rectangle> GetSolidRectangles()
     {
         yield return _ground.GetBounds();
@@ -383,6 +389,16 @@ public class LevelScene : Scene, IPlayerScene
         }
     }
 
+    public void BeginFinalWalkTransition()
+    {
+        SceneTransitionContext.LevelToFinalWalk = new LevelToFinalWalkTransition
+        {
+            PlayerVehicleLocalPosition = _player.Position - _vehicle.Position
+        };
+
+        ChangeScene("finalWalk");
+    }
+
     protected override IEnumerable<Rectangle> GetDebugRectangles()
     {
         foreach (Rectangle rect in _ground.GetDebugRectangles())
@@ -473,6 +489,18 @@ public class LevelScene : Scene, IPlayerScene
         }
     }
 
+    private void ApplyIntroTransition()
+    {
+        IntroToLevelTransition transition = SceneTransitionContext.ConsumeIntroToLevel();
+        if (transition == null)
+        {
+            return;
+        }
+
+        _player.SetPosition(_vehicle.Position + transition.PlayerVehicleLocalPosition);
+        _preferOverviewView = true;
+    }
+
     private void DrawFuelBarrels(SpriteBatch spriteBatch, bool carriedOnly)
     {
         foreach (FuelBarrelEntity barrel in _fuelBarrels)
@@ -508,13 +536,7 @@ public class LevelScene : Scene, IPlayerScene
 
     private void DrawBackground(SpriteBatch spriteBatch)
     {
-        Texture2D background = AssetManager.GetTexture(Art.Background);
-        float wrappedOffset = _worldScrollX % background.Width;
-        Rectangle firstBackground = new(-(int)wrappedOffset, 0, background.Width, WorldConfig.WorldHeight);
-        Rectangle secondBackground = new(-(int)wrappedOffset + background.Width, 0, background.Width, WorldConfig.WorldHeight);
-
-        spriteBatch.Draw(background, firstBackground, Color.White);
-        spriteBatch.Draw(background, secondBackground, Color.White);
+        BackgroundRenderer.DrawLooping(spriteBatch, _worldScrollX, WorldConfig.WorldWidth);
     }
 
     private void DrawHud(SpriteBatch spriteBatch)

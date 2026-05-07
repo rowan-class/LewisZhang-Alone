@@ -60,6 +60,31 @@ public class Camera2D
             * Matrix.CreateScale(scaleX, scaleY, 1f);
     }
 
+    public Vector2 WorldToScreen(Vector2 worldPosition)
+    {
+        float scaleX = (float)WorldConfig.ScreenWidth / _baseViewBounds.Width;
+        float scaleY = (float)WorldConfig.ScreenHeight / _baseViewBounds.Height;
+        float cameraX = _baseViewBounds.X + _lookAheadX + _shakeOffset.X;
+        float cameraY = _baseViewBounds.Y + _shakeOffset.Y;
+
+        return new Vector2(
+            (worldPosition.X - cameraX) * scaleX,
+            (worldPosition.Y - cameraY) * scaleY);
+    }
+
+    public Rectangle WorldToScreen(Rectangle worldBounds)
+    {
+        float scaleX = (float)WorldConfig.ScreenWidth / _baseViewBounds.Width;
+        float scaleY = (float)WorldConfig.ScreenHeight / _baseViewBounds.Height;
+        Vector2 screenTopLeft = WorldToScreen(new Vector2(worldBounds.X, worldBounds.Y));
+
+        return new Rectangle(
+            (int)MathF.Round(screenTopLeft.X),
+            (int)MathF.Round(screenTopLeft.Y),
+            (int)MathF.Round(worldBounds.Width * scaleX),
+            (int)MathF.Round(worldBounds.Height * scaleY));
+    }
+
     private void UpdateShake(float dt, float speedAmount, float vehicleSpeed)
     {
         if (vehicleSpeed < WorldConfig.CameraMinShakeSpeed)
