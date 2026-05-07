@@ -76,10 +76,12 @@ public class Game1 : Game
             ["newGame"] = () =>
             {
                 SaveManager.DeleteSave();
-                return new LevelScene();
+                return new WalkingScene(WalkingSceneMode.Intro);
             },
             ["continue"] = () => new LevelScene(SaveManager.Load()),
             ["level1"] = () => new LevelScene(),
+            ["finalWalk"] = () => new WalkingScene(WalkingSceneMode.Final),
+            ["end"] = () => new EndScene(),
         };
 
         _currentScene = _sceneFactories["start"]();

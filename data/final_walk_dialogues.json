@@ -1,0 +1,20 @@
+[
+  {
+    "id": "final_walk_start",
+    "trigger": "scene_start",
+    "dialogue": [
+      {
+        "speaker": "houston",
+        "text": "Throttle is jammed and the solar panel just dropped offline."
+      },
+      {
+        "speaker": "houston",
+        "text": "Lewis, this is the last stretch. You have to leave the rover and walk."
+      },
+      {
+        "speaker": "houston",
+        "text": "When you get clear of the dust, you should see the old return capsule."
+      }
+    ]
+  }
+]

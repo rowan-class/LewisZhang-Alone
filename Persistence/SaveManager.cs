@@ -11,6 +11,9 @@ public class SaveData
     public float WorldScrollX { get; set; }
     public float NextFuelSpawnX { get; set; }
     public bool PreferOverviewView { get; set; }
+    public bool VehicleDiscovered { get; set; }
+    public bool InitialFuelBarrelsSpawned { get; set; }
+    public bool RepairGunExplained { get; set; }
     public VectorSaveData PlayerPosition { get; set; }
     public VehicleSaveData Vehicle { get; set; }
     public ThrottleSaveData Throttle { get; set; }

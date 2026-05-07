@@ -1,0 +1,81 @@
+[
+  {
+    "id": "intro_try_contact_1",
+    "trigger": "distance",
+    "triggerDistance": 90.0,
+    "dialogue": [
+      {
+        "speaker": "player",
+        "text": "Houston, this is Lewis. I am on foot. Do you copy?"
+      },
+      {
+        "speaker": "player",
+        "text": "No response. Suit radio is breaking up. I will keep moving east."
+      }
+    ]
+  },
+  {
+    "id": "intro_try_contact_2",
+    "trigger": "distance",
+    "triggerDistance": 280.0,
+    "dialogue": [
+      {
+        "speaker": "player",
+        "text": "Houston, signal is intermittent. I lost visual on the launch vehicle."
+      },
+      {
+        "speaker": "player",
+        "text": "I am still alive. Heading toward the rover beacon."
+      }
+    ]
+  },
+  {
+    "id": "intro_houston_response",
+    "trigger": "distance",
+    "triggerDistance": 470.0,
+    "dialogue": [
+      {
+        "speaker": "houston",
+        "text": "Lewis, Houston. We have your suit telemetry again. Keep walking."
+      },
+      {
+        "speaker": "houston",
+        "text": "The storm forced the crew to abort early. They lost your signal while you were moving toward the return rocket."
+      },
+      {
+        "speaker": "houston",
+        "text": "Your vitals show you were unconscious for a while. The base was hit hard."
+      },
+      {
+        "speaker": "houston",
+        "text": "Best option now: find the rover ahead. Reach it first. We are working the next plan."
+      }
+    ]
+  },
+  {
+    "id": "vehicle_training",
+    "trigger": "vehicle_reached",
+    "dialogue": [
+      {
+        "speaker": "houston",
+        "text": "We see your signal near the rover. This is not your usual vehicle, so listen carefully."
+      },
+      {
+        "speaker": "houston",
+        "text": "Push the throttle with G plus D. Use the fuel port and its button to load fuel cans into the tank."
+      },
+      {
+        "speaker": "houston",
+        "text": "The auto pickup module was wrecked in the storm. For now you must carry fuel by hand."
+      },
+      {
+        "speaker": "houston",
+        "text": "Some fuel cans were blown across the ground. Some fell from other rovers during the evacuation."
+      },
+      {
+        "speaker": "houston",
+        "text": "Start the rover and drive forward. We will figure out the rest while you move."
+      }
+    ]
+  }
+]

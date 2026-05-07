@@ -22,6 +22,8 @@ public enum Art
     AutoPickupModule,
     SolarPanelPowered,
     SolarPanelUnpowered,
+    ApolloLowerHalf,
+    ApolloUpperHalf,
     Background,
     Sandstorm,
     ProfileHouston,
@@ -54,6 +56,8 @@ public static class AssetManager
         textures[Art.AutoPickupModule] = content.Load<Texture2D>("modules/suck");
         textures[Art.SolarPanelPowered] = content.Load<Texture2D>("modules/solar/solarpanel1");
         textures[Art.SolarPanelUnpowered] = content.Load<Texture2D>("modules/solar/solarpanel2");
+        textures[Art.ApolloLowerHalf] = content.Load<Texture2D>("apollolowerhalf");
+        textures[Art.ApolloUpperHalf] = content.Load<Texture2D>("apolloupperhalf");
         textures[Art.Background] = content.Load<Texture2D>("background");
         textures[Art.Sandstorm] = content.Load<Texture2D>("weather/sandstorm");
         textures[Art.ProfileHouston] = content.Load<Texture2D>("profile/houston");

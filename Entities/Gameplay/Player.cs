@@ -34,7 +34,7 @@ public class Player : PhysicsEntity
 
     public override void Update(GameTime gameTime)
     {
-        if (_scene is not LevelScene levelScene)
+        if (_scene is not IPlayerScene playerScene)
         {
             return;
         }
@@ -42,18 +42,20 @@ public class Player : PhysicsEntity
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         float movementInput = 0f;
 
-        if (ServiceLocator.Input.IsActionDown(Action.MoveRight))
+        bool inputLocked = playerScene.IsPlayerInputLocked;
+
+        if (!inputLocked && ServiceLocator.Input.IsActionDown(Action.MoveRight))
         {
             movementInput += 1f;
         }
 
-        if (ServiceLocator.Input.IsActionDown(Action.MoveLeft))
+        if (!inputLocked && playerScene.CanPlayerMoveLeft && ServiceLocator.Input.IsActionDown(Action.MoveLeft))
         {
             movementInput -= 1f;
         }
 
         _isMovingHorizontally = movementInput != 0f;
-        _isCarrying = levelScene.IsPlayerCarryingItem;
+        _isCarrying = playerScene.IsPlayerCarryingItem;
 
         if (movementInput > 0f)
         {
@@ -64,14 +66,14 @@ public class Player : PhysicsEntity
             _isFacingLeft = true;
         }
 
-        if (!levelScene.IsPlayerAttachedToVehicle(this))
+        if (!playerScene.IsPlayerAttachedToVehicle(this))
         {
-            _position.X -= levelScene.VehicleSpeed * dt;
+            _position.X -= playerScene.VehicleSpeed * dt;
         }
 
         velocity.X = movementInput * (isGrounded ? GroundMoveSpeed : AirMoveSpeed);
 
-        if (ServiceLocator.Input.IsActionPressed(Action.Jump) && isGrounded)
+        if (!inputLocked && ServiceLocator.Input.IsActionPressed(Action.Jump) && isGrounded)
         {
             velocity.Y = -JumpSpeed;
             isGrounded = false;
@@ -96,9 +98,9 @@ public class Player : PhysicsEntity
 
     protected override IEnumerable<Rectangle> GetSolidRectangles()
     {
-        if (_scene is LevelScene levelScene)
+        if (_scene is IPlayerScene playerScene)
         {
-            return levelScene.GetSolidRectangles();
+            return playerScene.GetSolidRectangles();
         }
 
         return System.Array.Empty<Rectangle>();
@@ -118,20 +120,24 @@ public class Player : PhysicsEntity
 
     private void KeepInsideWorldBounds()
     {
-        if (_position.X < WorldConfig.OverviewViewBounds.Left)
+        Rectangle movementBounds = _scene is IPlayerScene playerScene
+            ? playerScene.PlayerMovementBounds
+            : WorldConfig.OverviewViewBounds;
+
+        if (_position.X < movementBounds.Left)
         {
-            _position.X = WorldConfig.OverviewViewBounds.Left;
+            _position.X = movementBounds.Left;
         }
 
-        float maxX = WorldConfig.OverviewViewBounds.Right - _size.X;
+        float maxX = movementBounds.Right - _size.X;
         if (_position.X > maxX)
         {
             _position.X = maxX;
         }
 
-        if (_position.Y < WorldConfig.OverviewViewBounds.Top)
+        if (_position.Y < movementBounds.Top)
         {
-            _position.Y = WorldConfig.OverviewViewBounds.Top;
+            _position.Y = movementBounds.Top;
             velocity.Y = 0f;
         }
     }

@@ -31,6 +31,7 @@ public static class WorldConfig
     public static readonly Point FuelButtonSize = new(48, 24);
     public static readonly Point AutoPickupModuleSize = new(64, 96);
     public static readonly Point SolarPanelSize = new(600, 54);
+    public static readonly Point ReturnCapsuleSize = new(256, 256);
     public static readonly Point SolarInstallStationSize = new(1480, 980);
     public static readonly Point ThrottleSize = new(12, 36);
 
@@ -55,7 +56,11 @@ public static class WorldConfig
     public static readonly Vector2 SolarPanelTopLeftLocal = new(180f, 6f);
     public static readonly Vector2 ThrottleIdleTopLeftLocal = new(760f, 168f);
     public static readonly Vector2 SolarInstallStationButtonTopLeftLocal = new(1200f, 186f);
-    public static readonly Vector2 SolarInstallAnimatedPanelTopLeftLocal = new(980f, -120f);
+    public static readonly Vector2 SolarInstallAnimatedPanelTopLeftLocal = new(480f, -120f);
+    public const float ReturnCapsuleSpawnScreenX = 3150f;
+    public static readonly Rectangle ReturnCapsuleLowerCollisionLocalRect = new(0, 146, 256, 110);
+    public static readonly Rectangle ReturnCapsuleEntranceLocalRect = new(96, 64, 64, 64);
+    public const float ReturnCapsuleLaunchSpeed = 380f;
     public const float FuelButtonPressedDuration = 0.35f;
     public const float FuelButtonCooldownDuration = 0.65f;
     public const float ThrottleTravelDistance = 48f;

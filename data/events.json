@@ -1,63 +1,201 @@
 [
   {
-    "id": "sandstorm_intro",
-    "type": "sandstorm",
-    "minDistance": 1000.0,
-    "maxDistance": 2000.0,
-    "scrollSpeed": 520.0,
-    "alpha": 0.72
-  },
-  {
-    "id": "dialogue_intro",
+    "id": "maintenance_facility_hint",
     "type": "dialogue",
-    "triggerDistance": 100.0,
+    "triggerDistance": 1500.0,
     "dialogue": [
       {
         "speaker": "houston",
-        "text": "Houston here. Keep the vehicle moving, but watch every module."
+        "text": "You are near an old rover maintenance facility."
       },
       {
-        "speaker": "player",
-        "text": "Understood. I will check the systems as we travel."
+        "speaker": "houston",
+        "text": "Records show a solar panel kit compatible with this rover. It should help if we can install it."
       }
     ]
   },
   {
-    "id": "solar_install_station_intro",
+    "id": "solar_install_station",
     "type": "solar_install_station",
-    "triggerDistance": 200000.0
+    "triggerDistance": 2300.0
   },
   {
-    "id": "fuel_port_failure_intro",
+    "id": "post_solar_station",
+    "type": "dialogue",
+    "triggerDistance": 4050.0,
+    "dialogue": [
+      {
+        "speaker": "houston",
+        "text": "Solar panel link is clean. When the sun is up, that button can carry you even with low fuel."
+      }
+    ]
+  },
+  {
+    "id": "sandstorm_after_station",
+    "type": "sandstorm",
+    "minDistance": 4300.0,
+    "maxDistance": 5000.0,
+    "scrollSpeed": 560.0,
+    "alpha": 0.74
+  },
+  {
+    "id": "solar_night_1",
+    "type": "solar_night",
+    "triggerDistance": 5400.0
+  },
+  {
+    "id": "night_warning",
+    "type": "dialogue",
+    "triggerDistance": 5425.0,
+    "dialogue": [
+      {
+        "speaker": "houston",
+        "text": "Night cycle is starting. Solar output is gone until morning."
+      }
+    ]
+  },
+  {
+    "id": "repair_gun_drop",
+    "type": "repair_gun_drop",
+    "triggerDistance": 5600.0
+  },
+  {
+    "id": "lightning_1",
+    "type": "lightning",
+    "minDistance": 6400.0,
+    "maxDistance": 7100.0,
+    "minInterval": 0.5,
+    "maxInterval": 1.7,
+    "flashDuration": 0.22,
+    "boltCount": 3,
+    "alpha": 0.82
+  },
+  {
+    "id": "solar_day_1",
+    "type": "solar_day",
+    "triggerDistance": 7600.0
+  },
+  {
+    "id": "sandstorm_return_plan",
+    "type": "sandstorm",
+    "minDistance": 8000.0,
+    "maxDistance": 8700.0,
+    "scrollSpeed": 600.0,
+    "alpha": 0.78
+  },
+  {
+    "id": "return_plan_dialogue",
+    "type": "dialogue",
+    "triggerDistance": 8750.0,
+    "dialogue": [
+      {
+        "speaker": "houston",
+        "text": "We have one possible way home."
+      },
+      {
+        "speaker": "houston",
+        "text": "A much older mission left an unused return capsule downrange. It was never launched."
+      },
+      {
+        "speaker": "houston",
+        "text": "Your job is brutally simple: keep moving forward until you reach it."
+      }
+    ]
+  },
+  {
+    "id": "solar_night_2",
+    "type": "solar_night",
+    "triggerDistance": 9300.0
+  },
+  {
+    "id": "lightning_breaks_repair_gun",
+    "type": "lightning",
+    "minDistance": 9700.0,
+    "maxDistance": 10300.0,
+    "minInterval": 0.45,
+    "maxInterval": 1.5,
+    "flashDuration": 0.26,
+    "boltCount": 4,
+    "alpha": 0.88
+  },
+  {
+    "id": "repair_gun_failure",
+    "type": "component_failure",
+    "target": "repair_gun",
+    "triggerDistance": 9720.0
+  },
+  {
+    "id": "repair_gun_failure_dialogue",
+    "type": "dialogue",
+    "triggerDistance": 9760.0,
+    "dialogue": [
+      {
+        "speaker": "houston",
+        "text": "That strike spiked the repair gun. I am not seeing it on telemetry anymore."
+      },
+      {
+        "speaker": "houston",
+        "text": "No more field repairs. Protect the systems you still have."
+      }
+    ]
+  },
+  {
+    "id": "solar_day_2",
+    "type": "solar_day",
+    "triggerDistance": 10600.0
+  },
+  {
+    "id": "sandstorm_breaks_fuel_port",
+    "type": "sandstorm",
+    "minDistance": 11100.0,
+    "maxDistance": 11700.0,
+    "scrollSpeed": 620.0,
+    "alpha": 0.8
+  },
+  {
+    "id": "fuel_port_failure",
     "type": "component_failure",
     "target": "fuel_port",
-    "triggerDistance": 3000.0
+    "triggerDistance": 11120.0
   },
   {
-    "id": "repair_gun_intro",
-    "type": "repair_gun_drop",
-    "triggerDistance": 3100.0
+    "id": "fuel_port_failure_dialogue",
+    "type": "dialogue",
+    "triggerDistance": 11750.0,
+    "dialogue": [
+      {
+        "speaker": "houston",
+        "text": "Fuel port is gone. Do not waste time trying to feed the tank."
+      },
+      {
+        "speaker": "houston",
+        "text": "Use the solar panel while you can and squeeze out a little more distance."
+      }
+    ]
   },
   {
-    "id": "throttle_failure_intro",
+    "id": "final_sandstorm",
+    "type": "sandstorm",
+    "minDistance": 12300.0,
+    "duration": 8.0,
+    "scrollSpeed": 760.0,
+    "alpha": 0.9
+  },
+  {
+    "id": "final_throttle_failure",
     "type": "component_failure",
     "target": "throttle",
-    "triggerDistance": 6000.0
+    "triggerDistance": 12450.0
   },
   {
-    "id": "solar_night_intro",
-    "type": "solar_night",
-    "triggerDistance": 400000.0
-  },
-  {
-    "id": "solar_day_intro",
-    "type": "solar_day",
-    "triggerDistance": 620000.0
-  },
-  {
-    "id": "solar_failure_intro",
+    "id": "final_solar_failure",
     "type": "component_failure",
     "target": "solar_panel",
-    "triggerDistance": 201000.0
+    "triggerDistance": 12450.0
+  },
+  {
+    "id": "final_walk_scene",
+    "type": "final_walk",
+    "triggerDistance": 12450.0
   }
 ]

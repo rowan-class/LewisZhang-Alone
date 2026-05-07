@@ -5,7 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace LewisZhang_Alone;
 
-public class LevelScene : Scene
+public class LevelScene : Scene, IPlayerScene
 {
     private const float DebugSpeedAdjustPerSecond = 240f;
     private const float RepairFlashDuration = 0.25f;
@@ -22,7 +22,7 @@ public class LevelScene : Scene
     private readonly SolarButtonEntity _solarButton;
     private readonly AutoPickupModuleEntity _autoPickupModule;
     private readonly SolarPanelEntity _solarPanel;
-    private readonly Player _player = new(WorldConfig.PlayerStartPosition);
+    private readonly Player _player;
     private readonly GroundEntity _ground = new();
     private readonly List<FuelBarrelEntity> _fuelBarrels = new();
     private readonly List<RepairGunEntity> _repairGuns = new();
@@ -32,6 +32,10 @@ public class LevelScene : Scene
     private float _nextFuelSpawnX = 2400f;
     private float _repairFlashTimer;
     private bool _preferOverviewView;
+    private bool _vehicleDiscovered = true;
+    private bool _initialFuelBarrelsSpawned;
+    private bool _repairGunExplained;
+    private bool _isReturnCapsuleLaunching;
     private FuelBarrelEntity _carriedFuelBarrel;
     private RepairGunEntity _carriedRepairGun;
 
@@ -51,6 +55,7 @@ public class LevelScene : Scene
         _autoPickupModule = new AutoPickupModuleEntity();
         _solarPanel = new SolarPanelEntity();
         _solarButton = new SolarButtonEntity(_vehicle, _solarPanel);
+        _player = new Player(WorldConfig.PlayerStartPosition);
         _vehicle.SetScene(this);
         _throttle.SetScene(this);
         _fuelDisplay.SetScene(this);
@@ -64,26 +69,30 @@ public class LevelScene : Scene
         _ground.SetScene(this);
         _ground.Update(new GameTime());
 
-        if (saveData == null)
+        if (saveData != null)
         {
-            SpawnInitialFuelBarrels();
+            RestoreSaveData(saveData);
         }
         else
         {
-            RestoreSaveData(saveData);
+            SpawnInitialFuelBarrels();
         }
 
         UpdateCameraMode();
     }
 
     public float WorldScrollX => _worldScrollX;
+    public float StoryDistance => _worldScrollX;
     public float VehicleSpeed => _vehicle.Speed;
     public VehicleEntity Vehicle => _vehicle;
     public bool IsPlayerCarryingFuelBarrel => _carriedFuelBarrel != null;
     public bool IsPlayerCarryingItem => _carriedFuelBarrel != null || _carriedRepairGun != null;
     public Player Player => _player;
     public Rectangle PlayerBounds => _player.GetBounds();
-    public bool IsThrottleLockedByEvent => _eventManager.IsThrottleLocked(_worldScrollX);
+    public bool IsThrottleLockedByEvent => _eventManager.IsThrottleLocked(StoryDistance);
+    public bool IsPlayerInputLocked => _eventManager.IsPlayerMovementLocked();
+    public bool CanPlayerMoveLeft => true;
+    public Rectangle PlayerMovementBounds => WorldConfig.OverviewViewBounds;
 
     public IEnumerable<FuelBarrelEntity> GetFuelBarrels()
     {
@@ -95,6 +104,12 @@ public class LevelScene : Scene
         if (_textBox.IsActiveDialogue)
         {
             _textBox.Update(gameTime);
+            return;
+        }
+
+        if (_isReturnCapsuleLaunching)
+        {
+            UpdateReturnCapsuleEvent(gameTime);
             return;
         }
 
@@ -125,8 +140,24 @@ public class LevelScene : Scene
         }
 
         _ground.Update(gameTime);
+        _eventManager.Update(gameTime, StoryDistance, _camera.ViewBounds, this);
+        if (_isReturnCapsuleLaunching)
+        {
+            _camera.Update(gameTime, 0f);
+            return;
+        }
+
+        if (_textBox.IsActiveDialogue)
+        {
+            UpdateCameraMode();
+            _camera.Update(gameTime, _vehicle.Speed);
+            return;
+        }
+
         SpawnFuelBarrelsIfNeeded();
+
         _player.Update(gameTime);
+
         _solarButton.Update(gameTime);
         _handbrakeButton.Update(gameTime);
         _throttle.Update(gameTime);
@@ -140,15 +171,16 @@ public class LevelScene : Scene
             HandleDebugSpeedControls(dt);
         }
 
-        _eventManager.Update(gameTime, _worldScrollX, _camera.ViewBounds, this);
         _worldScrollX += _vehicle.Speed * dt;
 
         _fuelDisplay.Update(gameTime);
+
         UpdateFuelBarrels(gameTime);
         UpdateRepairGuns(gameTime);
         TryRepairDamagedComponent();
         HandleFuelBarrelInteraction();
         _autoPickupModule.Update(gameTime);
+
         _repairFlashTimer = MathF.Max(0f, _repairFlashTimer - dt);
         UpdateCameraMode();
         _camera.Update(gameTime, _vehicle.Speed);
@@ -175,11 +207,15 @@ public class LevelScene : Scene
         _solarButton.Draw(spriteBatch);
         _autoPickupModule.Draw(spriteBatch);
         _solarPanel.Draw(spriteBatch);
+
         DrawFuelBarrels(spriteBatch, carriedOnly: false);
         DrawRepairGuns(spriteBatch, carriedOnly: false);
         DrawFuelBarrels(spriteBatch, carriedOnly: true);
         DrawRepairGuns(spriteBatch, carriedOnly: true);
-        _player.Draw(spriteBatch);
+        if (!_isReturnCapsuleLaunching)
+        {
+            _player.Draw(spriteBatch);
+        }
         _eventManager.DrawOverlay(spriteBatch, _camera.ViewBounds);
 
         if (Game1.Debug)
@@ -271,7 +307,32 @@ public class LevelScene : Scene
             case "auto_pickup_module":
                 _autoPickupModule.Damage();
                 break;
+
+            case "repair_gun":
+            case "repairgun":
+                BreakRepairGuns();
+                break;
         }
+    }
+
+    public void ReachVehicle()
+    {
+        if (_vehicleDiscovered)
+        {
+            return;
+        }
+
+        _vehicleDiscovered = true;
+        _preferOverviewView = true;
+        SpawnInitialFuelBarrels();
+        _throttle.Update(new GameTime());
+        _fuelDisplay.Update(new GameTime());
+        _fuelPort.Update(new GameTime());
+        _fuelButton.Update(new GameTime());
+        _handbrakeButton.Update(new GameTime());
+        _solarButton.Update(new GameTime());
+        _autoPickupModule.Update(new GameTime());
+        _solarPanel.Update(new GameTime());
     }
 
     public void SpawnRepairGunDrop(float worldLocalX)
@@ -294,6 +355,32 @@ public class LevelScene : Scene
     public void StartDialogue(IEnumerable<DialogueLine> lines)
     {
         _textBox.StartDialogue(lines);
+    }
+
+    public void BeginReturnCapsuleLaunch()
+    {
+        if (_isReturnCapsuleLaunching)
+        {
+            return;
+        }
+
+        _isReturnCapsuleLaunching = true;
+        _vehicle.SetSolarDriveActive(false);
+        _vehicle.SetPowered(false);
+        _vehicle.SetBaseSpeed(0f);
+        _player.Deactivate();
+
+        if (_carriedFuelBarrel != null)
+        {
+            _carriedFuelBarrel.Deactivate();
+            _carriedFuelBarrel = null;
+        }
+
+        if (_carriedRepairGun != null)
+        {
+            _carriedRepairGun.Deactivate();
+            _carriedRepairGun = null;
+        }
     }
 
     protected override IEnumerable<Rectangle> GetDebugRectangles()
@@ -445,7 +532,7 @@ public class LevelScene : Scene
             spriteBatch.DrawString(AssetManager.ArialFont, "Vehicle: " + powerState + "  Speed: " + _vehicle.Speed.ToString("0.0"), new Vector2(20, 116), Color.White);
             spriteBatch.DrawString(AssetManager.ArialFont, "Camera: " + cameraState + "  Carrying: " + carryingState, new Vector2(20, 144), Color.White);
             spriteBatch.DrawString(AssetManager.ArialFont, "Player State: " + _player.CurrentState, new Vector2(20, 172), Color.White);
-            spriteBatch.DrawString(AssetManager.ArialFont, "Distance: " + _worldScrollX.ToString("0.0"), new Vector2(20, 200), Color.LightGreen);
+            spriteBatch.DrawString(AssetManager.ArialFont, "Distance: " + StoryDistance.ToString("0.0"), new Vector2(20, 200), Color.LightGreen);
             spriteBatch.DrawString(AssetManager.ArialFont, "Debug Speed: [ decrease   ] increase", new Vector2(20, 228), Color.Yellow);
             spriteBatch.DrawString(AssetManager.ArialFont, "Auto Pickup: " + (_autoPickupModule.IsEnabled ? "On" : "Off") + "  " + (_autoPickupModule.IsDamaged ? "Broken" : "OK") + "  (7 Toggle)", new Vector2(20, 256), Color.Yellow);
             string solarCondition = Game1.SolarPanelBlockedByWeather ? "Sandstorm" : Game1.SolarPanelIsDaytime ? "Day" : "Night";
@@ -466,11 +553,24 @@ public class LevelScene : Scene
         spriteBatch.Draw(AssetManager.GetTexture(Art.pixel), new Rectangle(0, 0, WorldConfig.ScreenWidth, WorldConfig.ScreenHeight), Color.LimeGreen * alpha);
     }
 
+    private void UpdateReturnCapsuleEvent(GameTime gameTime)
+    {
+        _eventManager.Update(gameTime, StoryDistance, _camera.ViewBounds, this);
+        _camera.Update(gameTime, 0f);
+    }
+
     private void SpawnInitialFuelBarrels()
     {
+        if (_initialFuelBarrelsSpawned)
+        {
+            return;
+        }
+
         SpawnFuelBarrelAt(1800f);
         SpawnFuelBarrelAt(2600f);
         SpawnFuelBarrelAt(3400f);
+        _nextFuelSpawnX = MathF.Max(_nextFuelSpawnX, 4200f);
+        _initialFuelBarrelsSpawned = true;
     }
 
     private void SpawnFuelBarrelsIfNeeded()
@@ -498,6 +598,9 @@ public class LevelScene : Scene
             WorldScrollX = _worldScrollX,
             NextFuelSpawnX = _nextFuelSpawnX,
             PreferOverviewView = _preferOverviewView,
+            VehicleDiscovered = _vehicleDiscovered,
+            InitialFuelBarrelsSpawned = _initialFuelBarrelsSpawned,
+            RepairGunExplained = _repairGunExplained,
             PlayerPosition = VectorSaveData.FromVector2(_player.Position),
             Vehicle = _vehicle.CaptureSaveData(),
             Throttle = _throttle.CaptureSaveData(),
@@ -562,6 +665,9 @@ public class LevelScene : Scene
         _worldScrollX = data.WorldScrollX;
         _nextFuelSpawnX = data.NextFuelSpawnX;
         _preferOverviewView = data.PreferOverviewView;
+        _vehicleDiscovered = true;
+        _initialFuelBarrelsSpawned = data.InitialFuelBarrelsSpawned;
+        _repairGunExplained = data.RepairGunExplained;
         Game1.SolarPanelEnabled = data.SolarPanelInstalled;
         Game1.RestoreSolarPanelEnergyState(data.SolarPanelIsDaytime, data.SolarPanelBlockedByWeather);
 
@@ -714,6 +820,7 @@ public class LevelScene : Scene
         {
             nearestRepairGun.PickUp(_player);
             _carriedRepairGun = nearestRepairGun;
+            StartRepairGunExplanationIfNeeded();
         }
     }
 
@@ -809,6 +916,43 @@ public class LevelScene : Scene
     private void TriggerRepairFlash()
     {
         _repairFlashTimer = RepairFlashDuration;
+    }
+
+    private void BreakRepairGuns()
+    {
+        if (_carriedRepairGun != null)
+        {
+            _carriedRepairGun.Deactivate();
+            _carriedRepairGun = null;
+        }
+
+        foreach (RepairGunEntity repairGun in _repairGuns)
+        {
+            repairGun.Deactivate();
+        }
+    }
+
+    private void StartRepairGunExplanationIfNeeded()
+    {
+        if (_repairGunExplained)
+        {
+            return;
+        }
+
+        _repairGunExplained = true;
+        StartDialogue(new[]
+        {
+            new DialogueLine
+            {
+                Speaker = "houston",
+                Text = "That blue tool is a repair gun. Touch a broken module with it and it should reboot the damaged system."
+            },
+            new DialogueLine
+            {
+                Speaker = "houston",
+                Text = "Start with the auto pickup module if you can. It will save you a lot of fuel-can hauling."
+            }
+        });
     }
 
     private void DropCarriedFuelBarrel()
