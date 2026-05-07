@@ -12,6 +12,7 @@ public class WorldEventDefinition
     public string Id { get; set; }
     public string Type { get; set; }
     public string Target { get; set; }
+    public List<DialogueLine> Dialogue { get; set; }
     public float TriggerDistance { get; set; }
     public float MinDistance { get; set; }
     public float MaxDistance { get; set; }
@@ -47,6 +48,7 @@ public class WorldEventManager
     private const string SolarNightType = "solar_night";
     private const string ComponentFailureType = "component_failure";
     private const string RepairGunDropType = "repair_gun_drop";
+    private const string DialogueType = "dialogue";
     private const string ProjectFileName = "LewisZhang-Alone.csproj";
     private const int SandstormLayerCount = 3;
     private const float SandstormLeadInPadding = 120f;
@@ -365,6 +367,13 @@ public class WorldEventManager
         {
             float spawnScreenX = cameraViewBounds.Left + cameraViewBounds.Width * 0.75f;
             levelScene?.SpawnRepairGunDrop(_lastTravelDistance + spawnScreenX);
+            runtime.IsActive = false;
+            return;
+        }
+
+        if (string.Equals(definition.Type, DialogueType, StringComparison.OrdinalIgnoreCase))
+        {
+            levelScene?.StartDialogue(definition.Dialogue);
             runtime.IsActive = false;
         }
     }

@@ -8,6 +8,21 @@
     "alpha": 0.72
   },
   {
+    "id": "dialogue_intro",
+    "type": "dialogue",
+    "triggerDistance": 100.0,
+    "dialogue": [
+      {
+        "speaker": "houston",
+        "text": "Houston here. Keep the vehicle moving, but watch every module."
+      },
+      {
+        "speaker": "player",
+        "text": "Understood. I will check the systems as we travel."
+      }
+    ]
+  },
+  {
     "id": "solar_install_station_intro",
     "type": "solar_install_station",
     "triggerDistance": 200000.0

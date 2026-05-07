@@ -24,6 +24,8 @@ public enum Art
     SolarPanelUnpowered,
     Background,
     Sandstorm,
+    ProfileHouston,
+    ProfilePlayer,
     Button,
     pixel
 }
@@ -54,6 +56,8 @@ public static class AssetManager
         textures[Art.SolarPanelUnpowered] = content.Load<Texture2D>("modules/solar/solarpanel2");
         textures[Art.Background] = content.Load<Texture2D>("background");
         textures[Art.Sandstorm] = content.Load<Texture2D>("weather/sandstorm");
+        textures[Art.ProfileHouston] = content.Load<Texture2D>("profile/houston");
+        textures[Art.ProfilePlayer] = content.Load<Texture2D>("profile/player");
         textures[Art.Button] = CreateSolidTexture(graphicsDevice, 120, 40, Color.LightGray);
         textures[Art.pixel] = CreateSolidTexture(graphicsDevice, 1, 1, Color.White);
         ArialFont = content.Load<SpriteFont>("Arial");

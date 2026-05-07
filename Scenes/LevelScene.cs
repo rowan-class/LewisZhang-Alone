@@ -12,6 +12,7 @@ public class LevelScene : Scene
 
     private readonly Camera2D _camera = new();
     private readonly WorldEventManager _eventManager = new();
+    private readonly TextBoxEntity _textBox = new();
     private readonly VehicleEntity _vehicle = new();
     private readonly ThrottleEntity _throttle;
     private readonly FuelDisplayEntity _fuelDisplay;
@@ -91,6 +92,12 @@ public class LevelScene : Scene
 
     public override void Update(GameTime gameTime)
     {
+        if (_textBox.IsActiveDialogue)
+        {
+            _textBox.Update(gameTime);
+            return;
+        }
+
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
         if (ServiceLocator.Input.IsActionPressed(Action.ToggleCameraView))
@@ -186,6 +193,7 @@ public class LevelScene : Scene
         spriteBatch.Begin(samplerState: SamplerState.PointClamp);
         DrawHud(spriteBatch);
         DrawRepairFlash(spriteBatch);
+        _textBox.Draw(spriteBatch);
         spriteBatch.End();
     }
 
@@ -281,6 +289,11 @@ public class LevelScene : Scene
         repairGun.SetScene(this);
         repairGun.Update(new GameTime());
         _repairGuns.Add(repairGun);
+    }
+
+    public void StartDialogue(IEnumerable<DialogueLine> lines)
+    {
+        _textBox.StartDialogue(lines);
     }
 
     protected override IEnumerable<Rectangle> GetDebugRectangles()
