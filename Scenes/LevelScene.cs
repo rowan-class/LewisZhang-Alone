@@ -12,6 +12,11 @@ public class LevelScene : Scene, IPlayerScene
     private const int DamageFailureThreshold = 2;
     private const float DamageFailureDuration = 10f;
     private const float DamageFailureDeathMaxDistance = 35000f;
+    private const float OffscreenFailureDuration = 10f;
+    private const float SolarInstallStationTriggerDistance = 4300f;
+    private const float RockEventClearance = 320f;
+
+    private static readonly RockObstacle[] WorldRockObstacles = CreateWorldRockObstacles();
 
     private readonly Camera2D _camera = new();
     private readonly WorldEventManager _eventManager = new();
@@ -35,6 +40,7 @@ public class LevelScene : Scene, IPlayerScene
     private float _nextFuelSpawnX = 2400f;
     private float _repairFlashTimer;
     private float _damageFailureTimer;
+    private float _offscreenFailureTimer;
     private float _moduleDamageBlinkTimer;
     private bool _preferOverviewView;
     private bool _vehicleDiscovered = true;
@@ -98,7 +104,7 @@ public class LevelScene : Scene, IPlayerScene
     public bool IsThrottleLockedByEvent => _eventManager.IsThrottleLocked(StoryDistance);
     public bool IsPlayerInputLocked => _eventManager.IsPlayerMovementLocked();
     public bool CanPlayerMoveLeft => true;
-    public Rectangle PlayerMovementBounds => WorldConfig.OverviewViewBounds;
+    public Rectangle PlayerMovementBounds => new(0, 0, WorldConfig.WorldWidth, WorldConfig.WorldHeight);
 
     public IEnumerable<FuelBarrelEntity> GetFuelBarrels()
     {
@@ -192,12 +198,8 @@ public class LevelScene : Scene, IPlayerScene
         _repairFlashTimer = MathF.Max(0f, _repairFlashTimer - dt);
         UpdateCameraMode();
         _camera.Update(gameTime, _vehicle.Speed);
+        UpdateOffscreenFailureState(dt);
         CleanupFuelBarrels();
-
-        if (_player.GetBounds().Top > WorldConfig.OverviewViewBounds.Bottom + 200 || _player.GetBounds().Right < WorldConfig.OverviewViewBounds.Left - 200)
-        {
-            ChangeScene("level1");
-        }
     }
 
     public override void Draw(SpriteBatch spriteBatch)
@@ -215,6 +217,7 @@ public class LevelScene : Scene, IPlayerScene
         _solarButton.Draw(spriteBatch);
         _autoPickupModule.Draw(spriteBatch);
         _solarPanel.Draw(spriteBatch);
+        DrawWorldRockObstacles(spriteBatch);
 
         DrawFuelBarrels(spriteBatch, carriedOnly: false);
         DrawRepairGuns(spriteBatch, carriedOnly: false);
@@ -238,6 +241,7 @@ public class LevelScene : Scene, IPlayerScene
         DrawHud(spriteBatch);
         DrawRepairFlash(spriteBatch);
         DrawDamageFailureWarning(spriteBatch);
+        DrawOffscreenFailureWarning(spriteBatch);
         _textBox.Draw(spriteBatch);
         spriteBatch.End();
     }
@@ -279,6 +283,11 @@ public class LevelScene : Scene, IPlayerScene
         foreach (Rectangle rect in _eventManager.GetSolidRectangles())
         {
             yield return rect;
+        }
+
+        foreach (RockObstacle obstacle in WorldRockObstacles)
+        {
+            yield return GetWorldRockCollisionBounds(obstacle);
         }
 
         Rectangle throttleRect = _throttle.GetCollisionBounds();
@@ -474,6 +483,11 @@ public class LevelScene : Scene, IPlayerScene
             yield return rect;
         }
 
+        foreach (RockObstacle obstacle in WorldRockObstacles)
+        {
+            yield return GetWorldRockCollisionBounds(obstacle);
+        }
+
         foreach (Rectangle rect in _player.GetDebugRectangles())
         {
             yield return rect;
@@ -553,6 +567,122 @@ public class LevelScene : Scene, IPlayerScene
         }
     }
 
+    private void DrawWorldRockObstacles(SpriteBatch spriteBatch)
+    {
+        foreach (RockObstacle obstacle in WorldRockObstacles)
+        {
+            Rectangle bounds = GetWorldRockBounds(obstacle);
+            if (bounds.Right < _camera.ViewBounds.Left - 128 || bounds.Left > _camera.ViewBounds.Right + 128)
+            {
+                continue;
+            }
+
+            DrawRockObstacle(spriteBatch, obstacle.Art, bounds);
+        }
+    }
+
+    private static void DrawRockObstacle(SpriteBatch spriteBatch, Art art, Rectangle bounds)
+    {
+        spriteBatch.Draw(AssetManager.GetTexture(art), bounds, Color.White);
+
+        float nightBlend = MathHelper.Clamp(Game1.BackgroundNightBlend, 0f, 1f);
+        if (nightBlend <= 0f)
+        {
+            return;
+        }
+
+        spriteBatch.Draw(AssetManager.GetTexture(GetNightRockArt(art)), bounds, Color.White * nightBlend);
+    }
+
+    private static Art GetNightRockArt(Art art)
+    {
+        return art switch
+        {
+            Art.Rock1 => Art.Rock1Night,
+            Art.Rock2 => Art.Rock2Night,
+            Art.Rock3 => Art.Rock3Night,
+            _ => art
+        };
+    }
+
+    private Rectangle GetWorldRockBounds(RockObstacle obstacle)
+    {
+        Vector2 worldPosition = ResolvePosition(PositionSpace.World, new Vector2(
+            obstacle.WorldLocalX,
+            WorldConfig.FakeGroundLocalRect.Y + 50f - obstacle.Size.Y));
+
+        return new Rectangle(
+            (int)MathF.Round(worldPosition.X),
+            (int)MathF.Round(worldPosition.Y),
+            obstacle.Size.X,
+            obstacle.Size.Y);
+    }
+
+    private Rectangle GetWorldRockCollisionBounds(RockObstacle obstacle)
+    {
+        Rectangle bounds = GetWorldRockBounds(obstacle);
+        return new Rectangle(
+            bounds.X + 16,
+            bounds.Y + 8,
+            Math.Max(1, bounds.Width - 32),
+            Math.Max(1, bounds.Height - 8));
+    }
+
+    private static RockObstacle[] CreateWorldRockObstacles()
+    {
+        Random random = new(31);
+        List<RockObstacle> obstacles = new();
+        float x = 1250f;
+
+        while (x < 46800f)
+        {
+            x += random.Next(520, 980);
+            RockObstacle obstacle = CreateRandomRockObstacle(random, x);
+
+            if (IsWorldRockBlockedByLargeEvent(obstacle.WorldLocalX, obstacle.Size.X))
+            {
+                continue;
+            }
+
+            obstacles.Add(obstacle);
+        }
+
+        return obstacles.ToArray();
+    }
+
+    private static RockObstacle CreateRandomRockObstacle(Random random, float worldLocalX)
+    {
+        return random.Next(0, 3) switch
+        {
+            0 => new RockObstacle(Art.Rock1, worldLocalX, new Point(127, 73)),
+            1 => new RockObstacle(Art.Rock2, worldLocalX, new Point(250, 100)),
+            _ => new RockObstacle(Art.Rock3, worldLocalX, new Point(250, 100))
+        };
+    }
+
+    private static bool IsWorldRockBlockedByLargeEvent(float worldLocalX, int width)
+    {
+        float right = worldLocalX + width;
+        float solarStationLeft = SolarInstallStationTriggerDistance + WorldConfig.SolarInstallStationStartScreenX;
+        float solarStationRight = solarStationLeft + WorldConfig.SolarInstallStationSize.X;
+
+        return RangesOverlap(worldLocalX, right, 3300f, 6800f)
+            || RangesOverlap(worldLocalX, right, solarStationLeft - RockEventClearance, solarStationRight + RockEventClearance)
+            || RangesOverlap(worldLocalX, right, 11150f, 12900f)
+            || RangesOverlap(worldLocalX, right, 14850f, 16350f)
+            || RangesOverlap(worldLocalX, right, 18500f, 21250f)
+            || RangesOverlap(worldLocalX, right, 24000f, 27350f)
+            || RangesOverlap(worldLocalX, right, 32050f, 33600f)
+            || RangesOverlap(worldLocalX, right, 39950f, 43150f)
+            || RangesOverlap(worldLocalX, right, 44750f, 45850f)
+            || RangesOverlap(worldLocalX, right, 46500f, 49000f);
+    }
+
+    private static bool RangesOverlap(float leftA, float rightA, float leftB, float rightB)
+    {
+        return leftA < rightB && rightA > leftB;
+    }
+
     private void DrawBackground(SpriteBatch spriteBatch)
     {
         BackgroundRenderer.DrawLooping(spriteBatch, _worldScrollX, WorldConfig.WorldWidth);
@@ -630,7 +760,7 @@ public class LevelScene : Scene, IPlayerScene
     private void SpawnFuelBarrelAt(float worldLocalX)
     {
         float groundY = WorldConfig.FakeGroundLocalRect.Y - WorldConfig.FuelBarrelSize.Y;
-        FuelBarrelEntity barrel = new(PositionSpace.World, new Vector2(worldLocalX, groundY));
+        FuelBarrelEntity barrel = new(PositionSpace.World, new Vector2(worldLocalX, groundY), _random.Next(0, 4));
         barrel.SetScene(this);
         barrel.Update(new GameTime());
         _fuelBarrels.Add(barrel);
@@ -679,7 +809,8 @@ public class LevelScene : Scene, IPlayerScene
             data.FuelBarrels.Add(new FuelBarrelSaveData
             {
                 Space = barrel.Space,
-                LocalPosition = VectorSaveData.FromVector2(barrel.LocalPosition)
+                LocalPosition = VectorSaveData.FromVector2(barrel.LocalPosition),
+                OrientationQuarterTurns = barrel.OrientationQuarterTurns
             });
         }
 
@@ -756,7 +887,7 @@ public class LevelScene : Scene, IPlayerScene
         for (int i = 0; i < data.FuelBarrels.Count; i++)
         {
             FuelBarrelSaveData barrelData = data.FuelBarrels[i];
-            FuelBarrelEntity barrel = new(barrelData.Space, barrelData.LocalPosition.ToVector2());
+            FuelBarrelEntity barrel = new(barrelData.Space, barrelData.LocalPosition.ToVector2(), barrelData.OrientationQuarterTurns);
             barrel.SetScene(this);
             barrel.Update(new GameTime());
 
@@ -980,6 +1111,27 @@ public class LevelScene : Scene, IPlayerScene
         }
     }
 
+    private void UpdateOffscreenFailureState(float dt)
+    {
+        if (IsPlayerVisibleOnScreen())
+        {
+            _offscreenFailureTimer = 0f;
+            return;
+        }
+
+        _offscreenFailureTimer += dt;
+        if (_offscreenFailureTimer >= OffscreenFailureDuration)
+        {
+            ChangeScene("gameOver");
+        }
+    }
+
+    private bool IsPlayerVisibleOnScreen()
+    {
+        Rectangle playerBounds = _player.GetBounds();
+        return playerBounds != Rectangle.Empty && playerBounds.Intersects(_camera.ViewBounds);
+    }
+
     private int CountDamagedVehicleSystems()
     {
         int damagedCount = 0;
@@ -1014,20 +1166,59 @@ public class LevelScene : Scene, IPlayerScene
             return;
         }
 
-        float pulse = 0.5f + 0.5f * MathF.Sin(_damageFailureTimer * 10f);
-        float urgency = MathHelper.Clamp(_damageFailureTimer / DamageFailureDuration, 0f, 1f);
-        float alpha = MathHelper.Lerp(0.12f, 0.45f, urgency) * pulse;
-        Rectangle bounds = new(0, 0, WorldConfig.ScreenWidth, WorldConfig.ScreenHeight);
-        spriteBatch.Draw(AssetManager.GetTexture(Art.pixel), bounds, Color.Red * alpha);
-
         if (!IsDamageFailureDeathActive())
         {
             return;
         }
 
-        int secondsRemaining = (int)MathF.Ceiling(MathF.Max(0f, DamageFailureDuration - _damageFailureTimer));
-        DrawCenteredHudText(spriteBatch, "CRITICAL SYSTEM FAILURE", new Vector2(WorldConfig.ScreenWidth / 2f, 96f), Color.White, 2f);
-        DrawCenteredHudText(spriteBatch, "Shutdown in " + secondsRemaining + "s", new Vector2(WorldConfig.ScreenWidth / 2f, 130f), Color.Yellow, 1.5f);
+        DrawFailureCountdownWarning(
+            spriteBatch,
+            "CRITICAL SYSTEM FAILURE",
+            "Shutdown in ",
+            _damageFailureTimer,
+            DamageFailureDuration,
+            96f,
+            2f,
+            1.5f);
+    }
+
+    private void DrawOffscreenFailureWarning(SpriteBatch spriteBatch)
+    {
+        if (_offscreenFailureTimer <= 0f || IsPlayerVisibleOnScreen())
+        {
+            return;
+        }
+
+        DrawFailureCountdownWarning(
+            spriteBatch,
+            "STAY NEAR THE ROVER",
+            "Danger in ",
+            _offscreenFailureTimer,
+            OffscreenFailureDuration,
+            176f,
+            1.7f,
+            1.25f);
+    }
+
+    private void DrawFailureCountdownWarning(
+        SpriteBatch spriteBatch,
+        string title,
+        string countdownPrefix,
+        float elapsedSeconds,
+        float durationSeconds,
+        float titleY,
+        float titleScale,
+        float countdownScale)
+    {
+        float pulse = 0.5f + 0.5f * MathF.Sin(elapsedSeconds * 10f);
+        float urgency = MathHelper.Clamp(elapsedSeconds / durationSeconds, 0f, 1f);
+        float alpha = MathHelper.Lerp(0.12f, 0.45f, urgency) * pulse;
+        Rectangle bounds = new(0, 0, WorldConfig.ScreenWidth, WorldConfig.ScreenHeight);
+        spriteBatch.Draw(AssetManager.GetTexture(Art.pixel), bounds, Color.Red * alpha);
+
+        int secondsRemaining = (int)MathF.Ceiling(MathF.Max(0f, durationSeconds - elapsedSeconds));
+        DrawCenteredHudText(spriteBatch, title, new Vector2(WorldConfig.ScreenWidth / 2f, titleY), Color.White, titleScale);
+        DrawCenteredHudText(spriteBatch, countdownPrefix + secondsRemaining + "s", new Vector2(WorldConfig.ScreenWidth / 2f, titleY + 34f), Color.Yellow, countdownScale);
     }
 
     private bool IsDamageFailureDeathActive()
@@ -1163,4 +1354,5 @@ public class LevelScene : Scene, IPlayerScene
             _vehicle.AdjustSpeed(delta);
         }
     }
+
 }

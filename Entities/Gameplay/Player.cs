@@ -26,6 +26,7 @@ public class Player : PhysicsEntity
 
     public PlayerState CurrentState => _state;
     public float CurrentConfiguredSpeed => isGrounded ? GroundMoveSpeed : AirMoveSpeed;
+    public bool IsFacingLeft => _isFacingLeft;
 
     public Player(Vector2 position)
         : base(Art.Player1, position, WorldConfig.PlayerSize)

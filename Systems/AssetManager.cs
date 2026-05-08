@@ -30,6 +30,12 @@ public enum Art
     BackgroundDay,
     BackgroundNight,
     Sandstorm,
+    Rock1,
+    Rock2,
+    Rock3,
+    Rock1Night,
+    Rock2Night,
+    Rock3Night,
     ProfileHouston,
     ProfilePlayer,
     Button,
@@ -67,6 +73,12 @@ public static class AssetManager
         textures[Art.BackgroundDay] = content.Load<Texture2D>("background/background_day");
         textures[Art.BackgroundNight] = content.Load<Texture2D>("background/background_night");
         textures[Art.Sandstorm] = content.Load<Texture2D>("weather/sandstorm");
+        textures[Art.Rock1] = content.Load<Texture2D>("rock/rock1");
+        textures[Art.Rock2] = content.Load<Texture2D>("rock/rock2");
+        textures[Art.Rock3] = content.Load<Texture2D>("rock/rock3");
+        textures[Art.Rock1Night] = content.Load<Texture2D>("rock/rock1N");
+        textures[Art.Rock2Night] = content.Load<Texture2D>("rock/rock2N");
+        textures[Art.Rock3Night] = content.Load<Texture2D>("rock/rock3N");
         textures[Art.ProfileHouston] = content.Load<Texture2D>("profile/houston");
         textures[Art.ProfilePlayer] = content.Load<Texture2D>("profile/player");
         textures[Art.Button] = CreateSolidTexture(graphicsDevice, 120, 40, Color.LightGray);

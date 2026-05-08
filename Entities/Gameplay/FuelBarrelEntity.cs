@@ -10,12 +10,15 @@ public class FuelBarrelEntity : SpaceEntity
 
     private Player _carrier;
     private float _verticalVelocity;
+    private int _orientationQuarterTurns;
 
     public bool IsCarried => _carrier != null;
+    public int OrientationQuarterTurns => _orientationQuarterTurns;
 
-    public FuelBarrelEntity(PositionSpace space, Vector2 localPosition)
+    public FuelBarrelEntity(PositionSpace space, Vector2 localPosition, int orientationQuarterTurns = 0)
         : base(space, localPosition, WorldConfig.FuelBarrelSize)
     {
+        _orientationQuarterTurns = NormalizeOrientation(orientationQuarterTurns);
     }
 
     public override void Update(GameTime gameTime)
@@ -64,19 +67,40 @@ public class FuelBarrelEntity : SpaceEntity
 
     public override void Draw(SpriteBatch spriteBatch)
     {
-        spriteBatch.Draw(AssetManager.GetTexture(Art.FuelBarrel), GetBounds(), Color.White);
+        Rectangle bounds = GetBounds();
+        Texture2D texture = AssetManager.GetTexture(Art.FuelBarrel);
+        Vector2 scale = new(_size.X / (float)texture.Width, _size.Y / (float)texture.Height);
+
+        spriteBatch.Draw(
+            texture,
+            bounds.Center.ToVector2(),
+            null,
+            Color.White,
+            MathHelper.PiOver2 * _orientationQuarterTurns,
+            new Vector2(texture.Width / 2f, texture.Height / 2f),
+            scale,
+            SpriteEffects.None,
+            0f);
     }
 
     public void PickUp(Player player)
     {
         _carrier = player;
         _verticalVelocity = 0f;
+        _orientationQuarterTurns = 0;
     }
 
     public void Drop(PositionSpace newSpace, Vector2 newLocalPosition)
     {
         _carrier = null;
         _verticalVelocity = 0f;
+        _orientationQuarterTurns = 0;
         SetSpace(newSpace, newLocalPosition);
+    }
+
+    private static int NormalizeOrientation(int orientationQuarterTurns)
+    {
+        int normalized = orientationQuarterTurns % 4;
+        return normalized < 0 ? normalized + 4 : normalized;
     }
 }

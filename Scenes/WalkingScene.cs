@@ -64,6 +64,7 @@ public class WalkingScene : Scene, IPlayerScene
     private readonly VehicleEntity _finalVehicle;
     private readonly List<WalkingDialogueDefinition> _dialogueDefinitions;
     private readonly HashSet<string> _triggeredDialogueIds = new();
+    private readonly RockObstacle[] _rockObstacles;
     private readonly int _worldWidth;
     private readonly Rectangle _movementBounds;
     private readonly LevelToFinalWalkTransition _finalTransition;
@@ -84,6 +85,7 @@ public class WalkingScene : Scene, IPlayerScene
         _movementBounds = new Rectangle(0, 0, _worldWidth, WorldConfig.WorldHeight);
         _stormTimer = mode == WalkingSceneMode.Intro ? IntroStormDuration : FinalStormDuration;
         _dialogueDefinitions = LoadDialogueDefinitions(mode);
+        _rockObstacles = CreateWalkingRockObstacles(mode);
 
         if (mode == WalkingSceneMode.Intro)
         {
@@ -132,6 +134,11 @@ public class WalkingScene : Scene, IPlayerScene
         foreach (Rectangle rect in GetWalkingTerrainRectangles())
         {
             yield return rect;
+        }
+
+        foreach (RockObstacle obstacle in _rockObstacles)
+        {
+            yield return GetWalkingRockCollisionBounds(obstacle);
         }
 
         if (_mode == WalkingSceneMode.Intro)
@@ -207,6 +214,8 @@ public class WalkingScene : Scene, IPlayerScene
             DrawCapsule(spriteBatch);
         }
 
+        DrawWalkingRockObstacles(spriteBatch);
+
         if (!_isLaunching)
         {
             _player.Draw(spriteBatch);
@@ -258,6 +267,11 @@ public class WalkingScene : Scene, IPlayerScene
         foreach (Rectangle rect in GetWalkingTerrainRectangles())
         {
             yield return rect;
+        }
+
+        foreach (RockObstacle obstacle in _rockObstacles)
+        {
+            yield return GetWalkingRockCollisionBounds(obstacle);
         }
     }
 
@@ -419,6 +433,100 @@ public class WalkingScene : Scene, IPlayerScene
         {
             yield return rect;
         }
+    }
+
+    private void DrawWalkingRockObstacles(SpriteBatch spriteBatch)
+    {
+        foreach (RockObstacle obstacle in _rockObstacles)
+        {
+            DrawRockObstacle(spriteBatch, obstacle.Art, GetWalkingRockBounds(obstacle));
+        }
+    }
+
+    private static void DrawRockObstacle(SpriteBatch spriteBatch, Art art, Rectangle bounds)
+    {
+        spriteBatch.Draw(AssetManager.GetTexture(art), bounds, Color.White);
+
+        float nightBlend = MathHelper.Clamp(Game1.BackgroundNightBlend, 0f, 1f);
+        if (nightBlend <= 0f)
+        {
+            return;
+        }
+
+        spriteBatch.Draw(AssetManager.GetTexture(GetNightRockArt(art)), bounds, Color.White * nightBlend);
+    }
+
+    private static Art GetNightRockArt(Art art)
+    {
+        return art switch
+        {
+            Art.Rock1 => Art.Rock1Night,
+            Art.Rock2 => Art.Rock2Night,
+            Art.Rock3 => Art.Rock3Night,
+            _ => art
+        };
+    }
+
+    private static Rectangle GetWalkingRockBounds(RockObstacle obstacle)
+    {
+        return new Rectangle(
+            (int)MathF.Round(obstacle.WorldLocalX),
+            (int)MathF.Round(WorldConfig.FakeGroundLocalRect.Y + 50f - obstacle.Size.Y),
+            obstacle.Size.X,
+            obstacle.Size.Y);
+    }
+
+    private static Rectangle GetWalkingRockCollisionBounds(RockObstacle obstacle)
+    {
+        Rectangle bounds = GetWalkingRockBounds(obstacle);
+        return new Rectangle(
+            bounds.X + 16,
+            bounds.Y + 8,
+            Math.Max(1, bounds.Width - 32),
+            Math.Max(1, bounds.Height - 8));
+    }
+
+    private static RockObstacle[] CreateWalkingRockObstacles(WalkingSceneMode mode)
+    {
+        Random random = new(mode == WalkingSceneMode.Intro ? 101 : 151);
+        List<RockObstacle> obstacles = new();
+        float x = mode == WalkingSceneMode.Intro ? 1320f : 1320f;
+        float maxX = mode == WalkingSceneMode.Intro ? 3300f : 3250f;
+
+        while (x < maxX)
+        {
+            x += random.Next(320, 560);
+            RockObstacle obstacle = CreateRandomWalkingRock(random, x);
+
+            if (mode == WalkingSceneMode.Intro && RangesOverlap(obstacle.WorldLocalX, obstacle.WorldLocalX + obstacle.Size.X, 3420f, 4300f))
+            {
+                continue;
+            }
+
+            if (mode == WalkingSceneMode.Final && RangesOverlap(obstacle.WorldLocalX, obstacle.WorldLocalX + obstacle.Size.X, 3400f, 4200f))
+            {
+                continue;
+            }
+
+            obstacles.Add(obstacle);
+        }
+
+        return obstacles.ToArray();
+    }
+
+    private static RockObstacle CreateRandomWalkingRock(Random random, float worldLocalX)
+    {
+        return random.Next(0, 3) switch
+        {
+            0 => new RockObstacle(Art.Rock1, worldLocalX, new Point(127, 73)),
+            1 => new RockObstacle(Art.Rock2, worldLocalX, new Point(250, 100)),
+            _ => new RockObstacle(Art.Rock3, worldLocalX, new Point(250, 100))
+        };
+    }
+
+    private static bool RangesOverlap(float leftA, float rightA, float leftB, float rightB)
+    {
+        return leftA < rightB && rightA > leftB;
     }
 
     private static Rectangle GetIntroVehicleBarrierBounds()

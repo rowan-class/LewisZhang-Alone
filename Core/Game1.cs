@@ -23,7 +23,7 @@ public class Game1 : Game
     // Default debug state. Press F3 in-game to toggle collision bounds.
     public static bool Debug = true;
     // Set this to jump straight into a level while debugging.
-    public static DebugStartLevel DebugStartLevel = DebugStartLevel.None;
+    public static DebugStartLevel DebugStartLevel = DebugStartLevel.Vehicle;
 // DebugStartLevel.None       // 正常从 start screen 开始
 // DebugStartLevel.IntroWalk  // 直接进开头走路场景
 // DebugStartLevel.Vehicle    // 直接进车 level

@@ -71,6 +71,7 @@ public class FuelBarrelSaveData
 {
     public PositionSpace Space { get; set; }
     public VectorSaveData LocalPosition { get; set; }
+    public int OrientationQuarterTurns { get; set; }
 }
 
 public class RepairGunSaveData

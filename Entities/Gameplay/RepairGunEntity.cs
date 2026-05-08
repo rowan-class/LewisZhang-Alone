@@ -64,7 +64,11 @@ public class RepairGunEntity : SpaceEntity
 
     public override void Draw(SpriteBatch spriteBatch)
     {
-        spriteBatch.Draw(AssetManager.GetTexture(Art.RepairGun), GetBounds(), Color.White);
+        SpriteEffects effects = _carrier != null && !_carrier.IsFacingLeft
+            ? SpriteEffects.FlipHorizontally
+            : SpriteEffects.None;
+
+        spriteBatch.Draw(AssetManager.GetTexture(Art.RepairGun), GetBounds(), null, Color.White, 0f, Vector2.Zero, effects, 0f);
     }
 
     public void PickUp(Player player)
