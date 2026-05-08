@@ -20,8 +20,8 @@ public class Game1 : Game
 {
     private const float BackgroundCrossfadeDuration = 2.4f;
 
-    // Default debug state. Press F3 in-game to toggle collision bounds.
-    public static bool Debug = true;
+    // Press F3 in-game to toggle collision bounds and debug panels.
+    public static bool Debug = false;
     // Set this to jump straight into a level while debugging.
     public static DebugStartLevel DebugStartLevel = DebugStartLevel.Vehicle;
 // DebugStartLevel.None       // 正常从 start screen 开始
@@ -179,7 +179,7 @@ public class Game1 : Game
     {
         ServiceLocator.Input.Update();
 
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || ServiceLocator.Input.IsActionDown(Action.ExitGame))
+        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
         {
             Exit();
         }

@@ -76,6 +76,7 @@ public class WalkingScene : Scene, IPlayerScene
     private float _moduleDamageBlinkTimer;
     private string _pendingScene;
     private bool _isLaunching;
+    private bool _isPaused;
     private float _capsuleUpperOffsetY;
 
     public WalkingScene(WalkingSceneMode mode)
@@ -159,6 +160,16 @@ public class WalkingScene : Scene, IPlayerScene
 
     public override void Update(GameTime gameTime)
     {
+        if (ServiceLocator.Input.IsActionPressed(Action.TogglePause))
+        {
+            _isPaused = !_isPaused;
+        }
+
+        if (_isPaused)
+        {
+            return;
+        }
+
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         UpdateStorm(dt);
         UpdateModuleDamageBlink(dt);
@@ -230,8 +241,13 @@ public class WalkingScene : Scene, IPlayerScene
 
         spriteBatch.Begin(samplerState: SamplerState.PointClamp);
         DrawStormOverlay(spriteBatch);
-        DrawDebugHud(spriteBatch);
+        DrawHud(spriteBatch);
+        if (!_isPaused)
+        {
+            DrawPauseHint(spriteBatch);
+        }
         _textBox.Draw(spriteBatch);
+        DrawPauseOverlay(spriteBatch);
         spriteBatch.End();
     }
 
@@ -739,7 +755,7 @@ public class WalkingScene : Scene, IPlayerScene
         }
     }
 
-    private void DrawDebugHud(SpriteBatch spriteBatch)
+    private void DrawHud(SpriteBatch spriteBatch)
     {
         if (!Game1.Debug)
         {
@@ -748,12 +764,40 @@ public class WalkingScene : Scene, IPlayerScene
 
         Vector2 startPosition = _mode == WalkingSceneMode.Intro ? IntroPlayerStart : FinalPlayerStart;
         float walkedDistance = MathF.Max(0f, _player.Position.X - startPosition.X);
-        string sceneName = _mode == WalkingSceneMode.Intro ? "Intro Walk" : "Final Walk";
-        string text = sceneName
-            + "  Distance: " + walkedDistance.ToString("0.0")
-            + "  Player X: " + _player.Position.X.ToString("0.0");
+        string sceneName = _mode == WalkingSceneMode.Intro ? "DEBUG  INTRO WALK" : "DEBUG  FINAL WALK";
+        List<HudLine> lines = new()
+        {
+            new HudLine("Distance  " + walkedDistance.ToString("0.0") + "    Player X  " + _player.Position.X.ToString("0.0"), Color.LightGreen)
+        };
 
-        spriteBatch.DrawString(AssetManager.ArialFont, text, new Vector2(20, 20), Color.LightGreen);
+        if (_stormTimer > 0f)
+        {
+            lines.Add(new HudLine("Storm interference  " + MathF.Ceiling(_stormTimer).ToString("0") + "s", Color.Yellow));
+        }
+
+        DrawSimpleDebugText(spriteBatch, sceneName, lines);
+    }
+
+    private void DrawPauseOverlay(SpriteBatch spriteBatch)
+    {
+        if (!_isPaused)
+        {
+            return;
+        }
+
+        string objective = _mode == WalkingSceneMode.Intro
+            ? "Reach the rover beacon"
+            : "Reach the return capsule";
+
+        DrawPausePage(spriteBatch, "Esc  Resume", new List<HudLine>
+        {
+            new HudLine("Esc                    Pause / Resume", new Color(224, 244, 248)),
+            new HudLine("WASD / Arrow Keys       Move", Color.White),
+            new HudLine("Space / W / Up          Jump", Color.White),
+            new HudLine("G / Enter / Space       Advance dialogue", Color.White),
+            new HudLine("Objective               " + objective, new Color(213, 232, 235)),
+            new HudLine("F3                      Toggle debug overlay", new Color(255, 232, 150))
+        });
     }
 
     private float GetStormAlpha()

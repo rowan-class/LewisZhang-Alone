@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace LewisZhang_Alone;
 
@@ -46,6 +47,17 @@ public class VehicleEntity : SpriteEntity
     private const float SolarSpeedBonus = 50f;
     private const float AcceleratingFuelUsePerSecond = 4f;
     private const float CruisingFuelUsePerSecond = 1.5f;
+    private const int WheelSize = 104;
+    private const float WheelRadius = WheelSize / 2f;
+
+    private static readonly Vector2[] WheelCentersLocal =
+    {
+        new(75f, 485f),
+        new(248f, 485f),
+        new(466f, 485f),
+        new(693f, 485f),
+        new(895f, 485f)
+    };
 
     // Edit these rectangles later to hand-author interior floors, walls, and shelves.
     // They are in vehicle-local coordinates.
@@ -72,7 +84,9 @@ public class VehicleEntity : SpriteEntity
     };
 
     private readonly VehicleResources _resources = new();
+    private readonly float[] _wheelInitialRotations;
     private float _speed;
+    private float _wheelRotation;
 
     public bool Powered { get; private set; }
     public bool HandbrakeActive { get; private set; }
@@ -87,6 +101,7 @@ public class VehicleEntity : SpriteEntity
     public VehicleEntity()
         : base(Art.Vehicle, WorldConfig.VehiclePosition, WorldConfig.VehicleSize)
     {
+        _wheelInitialRotations = CreateWheelInitialRotations();
     }
 
     public override void Update(GameTime gameTime)
@@ -114,6 +129,35 @@ public class VehicleEntity : SpriteEntity
         {
             Powered = false;
             _speed = System.MathF.Max(0f, _speed - CoastDeceleration * dt);
+        }
+
+        _wheelRotation = MathHelper.WrapAngle(_wheelRotation + Speed * dt / WheelRadius);
+    }
+
+    public override void Draw(SpriteBatch spriteBatch)
+    {
+        base.Draw(spriteBatch);
+
+        if (!_isActive)
+        {
+            return;
+        }
+
+        Texture2D wheelTexture = AssetManager.GetTexture(Art.Wheel);
+        Vector2 origin = new(wheelTexture.Width / 2f, wheelTexture.Height / 2f);
+        float scale = WheelSize / (float)wheelTexture.Width;
+        for (int i = 0; i < WheelCentersLocal.Length; i++)
+        {
+            spriteBatch.Draw(
+                wheelTexture,
+                _position + WheelCentersLocal[i],
+                null,
+                Color.White,
+                _wheelRotation + _wheelInitialRotations[i],
+                origin,
+                scale,
+                SpriteEffects.None,
+                0f);
         }
     }
 
@@ -246,6 +290,18 @@ public class VehicleEntity : SpriteEntity
     private float GetMaximumBaseSpeed()
     {
         return System.MathF.Max(0f, WorldConfig.VehicleMaxSpeed - GetSolarSpeedBonus());
+    }
+
+    private static float[] CreateWheelInitialRotations()
+    {
+        System.Random random = new(System.Guid.NewGuid().GetHashCode());
+        float[] rotations = new float[WheelCentersLocal.Length];
+        for (int i = 0; i < rotations.Length; i++)
+        {
+            rotations[i] = (float)(random.NextDouble() * MathHelper.TwoPi);
+        }
+
+        return rotations;
     }
 
     public bool IsInsideCabin(Rectangle playerBounds)

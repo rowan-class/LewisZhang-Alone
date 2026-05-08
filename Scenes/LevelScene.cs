@@ -47,6 +47,7 @@ public class LevelScene : Scene, IPlayerScene
     private bool _initialFuelBarrelsSpawned;
     private bool _repairGunExplained;
     private bool _isReturnCapsuleLaunching;
+    private bool _isPaused;
     private FuelBarrelEntity _carriedFuelBarrel;
     private RepairGunEntity _carriedRepairGun;
 
@@ -113,6 +114,16 @@ public class LevelScene : Scene, IPlayerScene
 
     public override void Update(GameTime gameTime)
     {
+        if (ServiceLocator.Input.IsActionPressed(Action.TogglePause))
+        {
+            _isPaused = !_isPaused;
+        }
+
+        if (_isPaused)
+        {
+            return;
+        }
+
         if (_textBox.IsActiveDialogue)
         {
             _textBox.Update(gameTime);
@@ -242,7 +253,12 @@ public class LevelScene : Scene, IPlayerScene
         DrawRepairFlash(spriteBatch);
         DrawDamageFailureWarning(spriteBatch);
         DrawOffscreenFailureWarning(spriteBatch);
+        if (!_isPaused)
+        {
+            DrawPauseHint(spriteBatch);
+        }
         _textBox.Draw(spriteBatch);
+        DrawPauseOverlay(spriteBatch);
         spriteBatch.End();
     }
 
@@ -694,23 +710,45 @@ public class LevelScene : Scene, IPlayerScene
         string cameraState = ShouldUseOverviewCamera() ? "Overview" : "Interior";
         string carryingState = _carriedFuelBarrel != null ? "Fuel Barrel" : _carriedRepairGun != null ? "Repair Gun" : "None";
 
-        spriteBatch.DrawString(AssetManager.ArialFont, "G + D Push Throttle", new Vector2(20, 20), Color.White);
-        spriteBatch.DrawString(AssetManager.ArialFont, "Shift Toggle Camera", new Vector2(20, 48), Color.White);
-        spriteBatch.DrawString(AssetManager.ArialFont, "WASD / Arrows Move, Space Jump, G Pick / Drop, F5 Save", new Vector2(20, 76), Color.White);
-
-        if (Game1.Debug)
+        if (!Game1.Debug)
         {
-            spriteBatch.DrawString(AssetManager.ArialFont, "Vehicle: " + powerState + "  Speed: " + _vehicle.Speed.ToString("0.0"), new Vector2(20, 116), Color.White);
-            spriteBatch.DrawString(AssetManager.ArialFont, "Camera: " + cameraState + "  Carrying: " + carryingState, new Vector2(20, 144), Color.White);
-            spriteBatch.DrawString(AssetManager.ArialFont, "Player State: " + _player.CurrentState, new Vector2(20, 172), Color.White);
-            spriteBatch.DrawString(AssetManager.ArialFont, "Distance: " + StoryDistance.ToString("0.0"), new Vector2(20, 200), Color.LightGreen);
-            spriteBatch.DrawString(AssetManager.ArialFont, "Debug Speed: [ decrease   ] increase", new Vector2(20, 228), Color.Yellow);
-            spriteBatch.DrawString(AssetManager.ArialFont, "Auto Pickup: " + (_autoPickupModule.IsEnabled ? "On" : "Off") + "  " + (_autoPickupModule.IsDamaged ? "Broken" : "OK") + "  (7 Toggle)", new Vector2(20, 256), Color.Yellow);
-            string solarCondition = Game1.SolarPanelBlockedByWeather ? "Sandstorm" : Game1.SolarPanelIsDaytime ? "Day" : "Night";
-            spriteBatch.DrawString(AssetManager.ArialFont, "Solar: " + (Game1.SolarPanelEnabled ? "On" : "Off") + "  " + solarCondition + "  (8 Toggle)", new Vector2(20, 284), Color.Cyan);
-            spriteBatch.DrawString(AssetManager.ArialFont, "Event: " + _eventManager.GetDebugStatus(), new Vector2(20, 312), Color.Orange);
-            spriteBatch.DrawString(AssetManager.ArialFont, "Damage: Fuel " + (_fuelPort.IsDamaged ? "Broken" : "OK") + "  Solar " + (_solarPanel.IsDamaged ? "Broken" : "OK") + "  Throttle " + (_throttle.IsDamaged ? "Broken" : "OK") + "  Pickup " + (_autoPickupModule.IsDamaged ? "Broken" : "OK"), new Vector2(20, 340), Color.OrangeRed);
+            return;
         }
+
+        string solarCondition = Game1.SolarPanelBlockedByWeather ? "Sandstorm" : Game1.SolarPanelIsDaytime ? "Day" : "Night";
+        DrawSimpleDebugText(spriteBatch, "DEBUG", new List<HudLine>
+        {
+            new HudLine("Vehicle  " + powerState + "    Speed  " + _vehicle.Speed.ToString("0.0"), new Color(189, 235, 255)),
+            new HudLine("Camera  " + cameraState + "    Carrying  " + carryingState, new Color(189, 235, 255)),
+            new HudLine("Player  " + _player.CurrentState + "    Distance  " + StoryDistance.ToString("0.0"), Color.LightGreen),
+            new HudLine("Auto pickup  " + (_autoPickupModule.IsEnabled ? "On" : "Off") + "    " + (_autoPickupModule.IsDamaged ? "Broken" : "OK"), Color.Yellow),
+            new HudLine("Solar  " + (Game1.SolarPanelEnabled ? "On" : "Off") + "    " + solarCondition, Color.Cyan),
+            new HudLine("Event  " + _eventManager.GetDebugStatus(), Color.Orange),
+            new HudLine("Damage  Fuel " + (_fuelPort.IsDamaged ? "Broken" : "OK") + "    Solar " + (_solarPanel.IsDamaged ? "Broken" : "OK") + "    Throttle " + (_throttle.IsDamaged ? "Broken" : "OK") + "    Pickup " + (_autoPickupModule.IsDamaged ? "Broken" : "OK"), Color.OrangeRed)
+        });
+    }
+
+    private void DrawPauseOverlay(SpriteBatch spriteBatch)
+    {
+        if (!_isPaused)
+        {
+            return;
+        }
+
+        DrawPausePage(spriteBatch, "Esc  Resume", new List<HudLine>
+        {
+            new HudLine("Esc                    Pause / Resume", new Color(224, 244, 248)),
+            new HudLine("WASD / Arrow Keys       Move", Color.White),
+            new HudLine("Space / W / Up          Jump", Color.White),
+            new HudLine("G                       Pick up, drop, press, advance dialogue", Color.White),
+            new HudLine("G + D                   Push throttle", Color.White),
+            new HudLine("Shift                   Toggle camera view", Color.White),
+            new HudLine("F5                      Save game", Color.White),
+            new HudLine("F3                      Toggle debug overlay", new Color(255, 232, 150)),
+            new HudLine("[ / ]                   Debug speed adjust", new Color(255, 232, 150)),
+            new HudLine("7                       Debug auto-pickup toggle", new Color(255, 232, 150)),
+            new HudLine("8                       Debug solar module toggle", new Color(255, 232, 150))
+        });
     }
 
     private void DrawRepairFlash(SpriteBatch spriteBatch)

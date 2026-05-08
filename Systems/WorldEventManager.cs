@@ -89,6 +89,8 @@ public class WorldEventManager
     private const float RepairGunDropSpawnPadding = 160f;
     private const int ButtonTriggerHeight = 12;
     private const int ButtonTriggerInsetX = 6;
+    private const int SolarInstallGroundApronHeight = 96;
+    private const int SolarInstallRoofHeight = 76;
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     private readonly List<WorldEventDefinition> _definitions;
@@ -954,13 +956,9 @@ public class WorldEventManager
             return;
         }
 
-        Texture2D pixel = AssetManager.GetTexture(Art.pixel);
-        spriteBatch.Draw(pixel, bounds, new Color(255, 255, 255, 235));
-
-        foreach (Rectangle platform in GetSolarInstallStationCollisionWorldRectangles(definition))
-        {
-            spriteBatch.Draw(pixel, platform, new Color(220, 220, 220));
-        }
+        DrawSolarInstallStationGroundApron(spriteBatch, bounds);
+        spriteBatch.Draw(AssetManager.GetTexture(Art.SolarInstallStation), bounds, Color.White);
+        DrawSolarInstallStationRoof(spriteBatch, bounds);
 
         if (ShouldShowSolarInstallButton(runtime))
         {
@@ -968,6 +966,53 @@ public class WorldEventManager
                 ? Art.FuelButtonPressed
                 : Art.FuelButtonIdle;
             spriteBatch.Draw(AssetManager.GetTexture(art), GetSolarInstallButtonWorldBounds(definition), Color.White);
+        }
+    }
+
+    private static void DrawSolarInstallStationGroundApron(SpriteBatch spriteBatch, Rectangle stationBounds)
+    {
+        DrawFilledTrapezoid(
+            spriteBatch,
+            stationBounds.Left,
+            stationBounds.Right,
+            stationBounds.Left - 260,
+            stationBounds.Right + 260,
+            stationBounds.Bottom,
+            stationBounds.Bottom + SolarInstallGroundApronHeight,
+            new Color(209, 203, 201, 255));
+    }
+
+    private static void DrawSolarInstallStationRoof(SpriteBatch spriteBatch, Rectangle stationBounds)
+    {
+        DrawFilledTrapezoid(
+            spriteBatch,
+            stationBounds.Left + 90,
+            stationBounds.Right - 90,
+            stationBounds.Left - 70,
+            stationBounds.Right + 70,
+            stationBounds.Top - SolarInstallRoofHeight,
+            stationBounds.Top + 18,
+            Color.White);
+    }
+
+    private static void DrawFilledTrapezoid(
+        SpriteBatch spriteBatch,
+        int topLeft,
+        int topRight,
+        int bottomLeft,
+        int bottomRight,
+        int topY,
+        int bottomY,
+        Color color)
+    {
+        Texture2D pixel = AssetManager.GetTexture(Art.pixel);
+        int height = Math.Max(1, bottomY - topY);
+        for (int y = 0; y < height; y++)
+        {
+            float t = height <= 1 ? 0f : y / (float)(height - 1);
+            int left = (int)MathF.Round(MathHelper.Lerp(topLeft, bottomLeft, t));
+            int right = (int)MathF.Round(MathHelper.Lerp(topRight, bottomRight, t));
+            spriteBatch.Draw(pixel, new Rectangle(left, topY + y, Math.Max(1, right - left), 1), color);
         }
     }
 

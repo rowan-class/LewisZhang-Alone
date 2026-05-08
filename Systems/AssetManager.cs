@@ -13,6 +13,7 @@ public enum Art
     Player4,
     Player5,
     Vehicle,
+    Wheel,
     FuelBarrel,
     RepairGun,
     FuelPortClosed,
@@ -24,6 +25,7 @@ public enum Art
     AutoPickupModule,
     SolarPanelPowered,
     SolarPanelUnpowered,
+    SolarInstallStation,
     ApolloLowerHalf,
     ApolloUpperHalf,
     Background,
@@ -56,6 +58,7 @@ public static class AssetManager
         textures[Art.Player4] = content.Load<Texture2D>("player/player4");
         textures[Art.Player5] = content.Load<Texture2D>("player/player5");
         textures[Art.Vehicle] = content.Load<Texture2D>("Vehicle");
+        textures[Art.Wheel] = content.Load<Texture2D>("wheel");
         textures[Art.FuelBarrel] = content.Load<Texture2D>("FuelBarrel");
         textures[Art.RepairGun] = content.Load<Texture2D>("repair");
         textures[Art.FuelPortClosed] = content.Load<Texture2D>("modules/fuel_port/fuel_port1");
@@ -67,6 +70,7 @@ public static class AssetManager
         textures[Art.AutoPickupModule] = content.Load<Texture2D>("modules/suck");
         textures[Art.SolarPanelPowered] = content.Load<Texture2D>("modules/solar/solarpanel1");
         textures[Art.SolarPanelUnpowered] = content.Load<Texture2D>("modules/solar/solarpanel2");
+        textures[Art.SolarInstallStation] = content.Load<Texture2D>("SolarInstallStation");
         textures[Art.ApolloLowerHalf] = content.Load<Texture2D>("apollolowerhalf");
         textures[Art.ApolloUpperHalf] = content.Load<Texture2D>("apolloupperhalf");
         textures[Art.Background] = content.Load<Texture2D>("background/background_day");
