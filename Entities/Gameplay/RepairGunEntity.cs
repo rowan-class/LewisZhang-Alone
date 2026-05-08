@@ -5,7 +5,6 @@ namespace LewisZhang_Alone;
 
 public class RepairGunEntity : SpaceEntity
 {
-    private static readonly Color RepairGunColor = Color.DeepSkyBlue;
     private const float Gravity = 1800f;
     private const float MaxFallSpeed = 1000f;
 
@@ -65,7 +64,7 @@ public class RepairGunEntity : SpaceEntity
 
     public override void Draw(SpriteBatch spriteBatch)
     {
-        spriteBatch.Draw(AssetManager.GetTexture(Art.pixel), GetBounds(), RepairGunColor);
+        spriteBatch.Draw(AssetManager.GetTexture(Art.RepairGun), GetBounds(), Color.White);
     }
 
     public void PickUp(Player player)

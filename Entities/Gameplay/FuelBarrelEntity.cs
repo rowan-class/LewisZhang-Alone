@@ -5,7 +5,6 @@ namespace LewisZhang_Alone;
 
 public class FuelBarrelEntity : SpaceEntity
 {
-    private static readonly Color FuelBarrelColor = Color.LimeGreen;
     private const float Gravity = 1800f;
     private const float MaxFallSpeed = 1000f;
 
@@ -65,7 +64,7 @@ public class FuelBarrelEntity : SpaceEntity
 
     public override void Draw(SpriteBatch spriteBatch)
     {
-        spriteBatch.Draw(AssetManager.GetTexture(Art.pixel), GetBounds(), FuelBarrelColor);
+        spriteBatch.Draw(AssetManager.GetTexture(Art.FuelBarrel), GetBounds(), Color.White);
     }
 
     public void PickUp(Player player)

@@ -11,6 +11,7 @@ public class LevelScene : Scene, IPlayerScene
     private const float RepairFlashDuration = 0.25f;
     private const int DamageFailureThreshold = 2;
     private const float DamageFailureDuration = 10f;
+    private const float DamageFailureDeathMaxDistance = 35000f;
 
     private readonly Camera2D _camera = new();
     private readonly WorldEventManager _eventManager = new();
@@ -34,6 +35,7 @@ public class LevelScene : Scene, IPlayerScene
     private float _nextFuelSpawnX = 2400f;
     private float _repairFlashTimer;
     private float _damageFailureTimer;
+    private float _moduleDamageBlinkTimer;
     private bool _preferOverviewView;
     private bool _vehicleDiscovered = true;
     private bool _initialFuelBarrelsSpawned;
@@ -78,8 +80,8 @@ public class LevelScene : Scene, IPlayerScene
         }
         else
         {
-            ApplyIntroTransition();
-            SpawnInitialFuelBarrels();
+            bool enteredFromIntroWalk = ApplyIntroTransition();
+            SpawnInitialFuelBarrels(includeVehicleLeftBarrel: !enteredFromIntroWalk);
         }
 
         UpdateCameraMode();
@@ -118,6 +120,7 @@ public class LevelScene : Scene, IPlayerScene
         }
 
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        _moduleDamageBlinkTimer += dt;
 
         if (ServiceLocator.Input.IsActionPressed(Action.ToggleCameraView))
         {
@@ -398,7 +401,17 @@ public class LevelScene : Scene, IPlayerScene
     {
         SceneTransitionContext.LevelToFinalWalk = new LevelToFinalWalkTransition
         {
-            PlayerVehicleLocalPosition = _player.Position - _vehicle.Position
+            PlayerVehicleLocalPosition = _player.Position - _vehicle.Position,
+            ModuleDamageBlinkTimer = _moduleDamageBlinkTimer,
+            FuelRatio = _vehicle.FuelRatio,
+            FuelPortLit = _fuelPort.IsLit,
+            FuelPortDamaged = _fuelPort.IsDamaged,
+            SolarPanelInstalled = Game1.SolarPanelEnabled,
+            SolarPanelDamaged = _solarPanel.IsDamaged,
+            ThrottleDamaged = _throttle.IsDamaged,
+            AutoPickupDamaged = _autoPickupModule.IsDamaged,
+            HandbrakeActive = _vehicle.HandbrakeActive,
+            SolarDriveActive = _vehicle.SolarDriveActive
         };
 
         ChangeScene("finalWalk");
@@ -494,16 +507,17 @@ public class LevelScene : Scene, IPlayerScene
         }
     }
 
-    private void ApplyIntroTransition()
+    private bool ApplyIntroTransition()
     {
         IntroToLevelTransition transition = SceneTransitionContext.ConsumeIntroToLevel();
         if (transition == null)
         {
-            return;
+            return false;
         }
 
         _player.SetPosition(_vehicle.Position + transition.PlayerVehicleLocalPosition);
         _preferOverviewView = true;
+        return true;
     }
 
     private void DrawFuelBarrels(SpriteBatch spriteBatch, bool carriedOnly)
@@ -586,14 +600,18 @@ public class LevelScene : Scene, IPlayerScene
         _camera.Update(gameTime, 0f);
     }
 
-    private void SpawnInitialFuelBarrels()
+    private void SpawnInitialFuelBarrels(bool includeVehicleLeftBarrel = true)
     {
         if (_initialFuelBarrelsSpawned)
         {
             return;
         }
 
-        SpawnFuelBarrelAt(1800f);
+        if (includeVehicleLeftBarrel)
+        {
+            SpawnFuelBarrelAt(1800f);
+        }
+
         SpawnFuelBarrelAt(2600f);
         SpawnFuelBarrelAt(3400f);
         _nextFuelSpawnX = MathF.Max(_nextFuelSpawnX, 4200f);
@@ -956,7 +974,7 @@ public class LevelScene : Scene, IPlayerScene
         }
 
         _damageFailureTimer += dt;
-        if (_damageFailureTimer >= DamageFailureDuration)
+        if (IsDamageFailureDeathActive() && _damageFailureTimer >= DamageFailureDuration)
         {
             ChangeScene("gameOver");
         }
@@ -1001,6 +1019,30 @@ public class LevelScene : Scene, IPlayerScene
         float alpha = MathHelper.Lerp(0.12f, 0.45f, urgency) * pulse;
         Rectangle bounds = new(0, 0, WorldConfig.ScreenWidth, WorldConfig.ScreenHeight);
         spriteBatch.Draw(AssetManager.GetTexture(Art.pixel), bounds, Color.Red * alpha);
+
+        if (!IsDamageFailureDeathActive())
+        {
+            return;
+        }
+
+        int secondsRemaining = (int)MathF.Ceiling(MathF.Max(0f, DamageFailureDuration - _damageFailureTimer));
+        DrawCenteredHudText(spriteBatch, "CRITICAL SYSTEM FAILURE", new Vector2(WorldConfig.ScreenWidth / 2f, 96f), Color.White, 2f);
+        DrawCenteredHudText(spriteBatch, "Shutdown in " + secondsRemaining + "s", new Vector2(WorldConfig.ScreenWidth / 2f, 130f), Color.Yellow, 1.5f);
+    }
+
+    private bool IsDamageFailureDeathActive()
+    {
+        return StoryDistance < DamageFailureDeathMaxDistance;
+    }
+
+    private static void DrawCenteredHudText(SpriteBatch spriteBatch, string text, Vector2 position, Color color, float scale)
+    {
+        Vector2 textSize = AssetManager.ArialFont.MeasureString(text) * scale;
+        Vector2 drawPosition = new(position.X - textSize.X / 2f, position.Y);
+        Vector2 shadowOffset = new(2f, 2f);
+
+        spriteBatch.DrawString(AssetManager.ArialFont, text, drawPosition + shadowOffset, Color.Black * 0.85f, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
+        spriteBatch.DrawString(AssetManager.ArialFont, text, drawPosition, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
     }
 
     private void BreakRepairGuns()

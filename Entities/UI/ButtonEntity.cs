@@ -62,9 +62,16 @@ public class ButtonEntity : SpriteEntity
             buttonRect.Y + (buttonRect.Height - textSize.Y) / 2f);
 
         bool enabled = IsEnabled();
-        Color buttonColor = !enabled ? Color.Gray : _hovered ? Color.LightGray : Color.White;
-        Color textColor = enabled ? Color.Black : Color.DarkGray;
-        spriteBatch.Draw(AssetManager.GetTexture(Art.Button), buttonRect, buttonColor);
+        Texture2D pixel = AssetManager.GetTexture(Art.pixel);
+        Color fill = !enabled ? new Color(22, 25, 28, 210) : _hovered ? new Color(224, 204, 138, 230) : new Color(34, 39, 45, 220);
+        Color border = !enabled ? new Color(80, 84, 88, 210) : _hovered ? new Color(255, 235, 160) : new Color(190, 164, 105, 210);
+        Color textColor = !enabled ? new Color(118, 120, 122) : _hovered ? new Color(10, 12, 14) : new Color(242, 238, 220);
+
+        spriteBatch.Draw(pixel, buttonRect, fill);
+        spriteBatch.Draw(pixel, new Rectangle(buttonRect.Left, buttonRect.Top, buttonRect.Width, 1), border);
+        spriteBatch.Draw(pixel, new Rectangle(buttonRect.Left, buttonRect.Bottom - 1, buttonRect.Width, 1), border * 0.75f);
+        spriteBatch.Draw(pixel, new Rectangle(buttonRect.Left, buttonRect.Top, 1, buttonRect.Height), border * 0.75f);
+        spriteBatch.Draw(pixel, new Rectangle(buttonRect.Right - 1, buttonRect.Top, 1, buttonRect.Height), border * 0.75f);
         spriteBatch.DrawString(AssetManager.ArialFont, _buttonText, textPosition, textColor);
     }
 

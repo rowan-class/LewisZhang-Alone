@@ -10,6 +10,16 @@ public sealed class IntroToLevelTransition
 public sealed class LevelToFinalWalkTransition
 {
     public Vector2 PlayerVehicleLocalPosition { get; init; }
+    public float ModuleDamageBlinkTimer { get; init; }
+    public float FuelRatio { get; init; }
+    public bool FuelPortLit { get; init; }
+    public bool FuelPortDamaged { get; init; }
+    public bool SolarPanelInstalled { get; init; }
+    public bool SolarPanelDamaged { get; init; }
+    public bool ThrottleDamaged { get; init; }
+    public bool AutoPickupDamaged { get; init; }
+    public bool HandbrakeActive { get; init; }
+    public bool SolarDriveActive { get; init; }
 }
 
 public static class SceneTransitionContext

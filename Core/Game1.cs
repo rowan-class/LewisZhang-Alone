@@ -11,7 +11,9 @@ public enum DebugStartLevel
     None,
     IntroWalk,
     Vehicle,
-    FinalWalk
+    FinalWalk,
+    GameOver,
+    Complete
 }
 
 public class Game1 : Game
@@ -21,11 +23,13 @@ public class Game1 : Game
     // Default debug state. Press F3 in-game to toggle collision bounds.
     public static bool Debug = true;
     // Set this to jump straight into a level while debugging.
-    public static DebugStartLevel DebugStartLevel = DebugStartLevel.FinalWalk;
+    public static DebugStartLevel DebugStartLevel = DebugStartLevel.None;
 // DebugStartLevel.None       // 正常从 start screen 开始
 // DebugStartLevel.IntroWalk  // 直接进开头走路场景
 // DebugStartLevel.Vehicle    // 直接进车 level
 // DebugStartLevel.FinalWalk  // 直接进结尾走路场景
+// DebugStartLevel.GameOver   // 直接进 game over 页面
+// DebugStartLevel.Complete   // 直接进 mission complete 页面
     // Flip this to show / enable the solar module.
     public static bool SolarPanelEnabled = false;
     public static bool SolarPanelHasEnergy = true;
@@ -160,6 +164,8 @@ public class Game1 : Game
             DebugStartLevel.IntroWalk => "newGame",
             DebugStartLevel.Vehicle => "level1",
             DebugStartLevel.FinalWalk => "finalWalk",
+            DebugStartLevel.GameOver => "gameOver",
+            DebugStartLevel.Complete => "end",
             _ => "start"
         };
     }

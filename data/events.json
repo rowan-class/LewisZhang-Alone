@@ -176,8 +176,8 @@
   {
     "id": "sandstorm_breaks_fuel_port",
     "type": "sandstorm",
-    "minDistance": 35100.0,
-    "maxDistance": 37200.0,
+    "minDistance": 40100.0,
+    "maxDistance": 43000.0,
     "scrollSpeed": 620.0,
     "alpha": 0.8
   },
@@ -214,7 +214,7 @@
     "id": "final_throttle_failure",
     "type": "component_failure",
     "target": "throttle",
-    "triggerDistance": 48100.0
+    "triggerDistance": 47000.0
   },
   {
     "id": "final_solar_failure",
@@ -225,6 +225,6 @@
   {
     "id": "final_walk_scene",
     "type": "final_walk",
-    "triggerDistance": 48200.0
+    "triggerDistance": 48300.0
   }
 ]

@@ -25,6 +25,7 @@ public class WalkingScene : Scene, IPlayerScene
     private const float FinalStormDuration = 5f;
     private const float StormScrollSpeed = 760f;
     private const float StormSheetScreenWidth = 1800f;
+    private const float DamageBlinkInterval = 0.18f;
     private const int IntroWorldWidth = 5600;
     private const int FinalWorldWidth = 5200;
     private const int WalkingCloseViewWidth = WorldConfig.ScreenWidth;
@@ -65,11 +66,13 @@ public class WalkingScene : Scene, IPlayerScene
     private readonly HashSet<string> _triggeredDialogueIds = new();
     private readonly int _worldWidth;
     private readonly Rectangle _movementBounds;
+    private readonly LevelToFinalWalkTransition _finalTransition;
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     private float _cameraX;
     private float _stormTimer;
     private float _stormOffset;
+    private float _moduleDamageBlinkTimer;
     private string _pendingScene;
     private bool _isLaunching;
     private float _capsuleUpperOffsetY;
@@ -91,11 +94,14 @@ public class WalkingScene : Scene, IPlayerScene
             _introVehicle.SetPosition(IntroVehiclePosition);
             _introVehicle.SetScene(this);
             _finalVehicle = null;
+            _finalTransition = null;
         }
         else
         {
             _introVehicle = null;
             LevelToFinalWalkTransition transition = SceneTransitionContext.ConsumeLevelToFinalWalk();
+            _finalTransition = transition ?? new LevelToFinalWalkTransition { FuelRatio = VehicleResources.InitialFuel / VehicleResources.MaxFuel };
+            _moduleDamageBlinkTimer = _finalTransition.ModuleDamageBlinkTimer;
             _finalVehicle = new VehicleEntity();
             _finalVehicle.SetPosition(FinalVehiclePosition);
             _finalVehicle.SetScene(this);
@@ -148,6 +154,7 @@ public class WalkingScene : Scene, IPlayerScene
     {
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         UpdateStorm(dt);
+        UpdateModuleDamageBlink(dt);
 
         if (_textBox.IsActiveDialogue)
         {
@@ -196,6 +203,7 @@ public class WalkingScene : Scene, IPlayerScene
         else
         {
             _finalVehicle.Draw(spriteBatch);
+            DrawFinalVehicleModules(spriteBatch);
             DrawCapsule(spriteBatch);
         }
 
@@ -350,6 +358,16 @@ public class WalkingScene : Scene, IPlayerScene
         _stormOffset += StormScrollSpeed * dt;
     }
 
+    private void UpdateModuleDamageBlink(float dt)
+    {
+        if (_mode != WalkingSceneMode.Final)
+        {
+            return;
+        }
+
+        _moduleDamageBlinkTimer += dt;
+    }
+
     private void UpdateCamera(float dt)
     {
         int viewWidth = GetCameraViewWidth();
@@ -487,9 +505,39 @@ public class WalkingScene : Scene, IPlayerScene
         DrawIntroFuelDisplay(spriteBatch);
     }
 
+    private void DrawFinalVehicleModules(SpriteBatch spriteBatch)
+    {
+        if (_finalTransition == null)
+        {
+            return;
+        }
+
+        Art fuelPortArt = _finalTransition.FuelPortLit ? Art.FuelPortLit : Art.FuelPortClosed;
+        DrawFinalVehicleTexture(spriteBatch, fuelPortArt, WorldConfig.FuelPortTopLeftLocal, WorldConfig.FuelPortSize, GetDamageTint(_finalTransition.FuelPortDamaged));
+        DrawFinalVehicleTexture(spriteBatch, Art.FuelButtonIdle, WorldConfig.FuelButtonTopLeftLocal, WorldConfig.FuelButtonSize, GetDamageTint(_finalTransition.FuelPortDamaged));
+        DrawFinalVehicleTexture(spriteBatch, _finalTransition.HandbrakeActive ? Art.FuelButtonPressed : Art.FuelButtonIdle, WorldConfig.HandbrakeButtonTopLeftLocal, WorldConfig.FuelButtonSize, Color.White);
+        DrawFinalVehicleTexture(spriteBatch, Art.Throttle, WorldConfig.ThrottleIdleTopLeftLocal, WorldConfig.ThrottleSize, GetDamageTint(_finalTransition.ThrottleDamaged));
+        DrawFinalVehicleTexture(spriteBatch, Art.AutoPickupModule, WorldConfig.AutoPickupModuleTopLeftLocal, WorldConfig.AutoPickupModuleSize, GetDamageTint(_finalTransition.AutoPickupDamaged));
+
+        if (_finalTransition.SolarPanelInstalled)
+        {
+            Art solarPanelArt = Game1.SolarPanelHasEnergy && !_finalTransition.SolarPanelDamaged ? Art.SolarPanelPowered : Art.SolarPanelUnpowered;
+            DrawFinalVehicleTexture(spriteBatch, solarPanelArt, WorldConfig.SolarPanelTopLeftLocal, WorldConfig.SolarPanelSize, GetDamageTint(_finalTransition.SolarPanelDamaged));
+            Art solarButtonArt = _finalTransition.SolarDriveActive && Game1.SolarPanelHasEnergy && !_finalTransition.SolarPanelDamaged ? Art.FuelButtonPressed : Art.FuelButtonIdle;
+            DrawFinalVehicleTexture(spriteBatch, solarButtonArt, WorldConfig.SolarButtonTopLeftLocal, WorldConfig.FuelButtonSize, GetDamageTint(_finalTransition.SolarPanelDamaged));
+        }
+
+        DrawFinalFuelDisplay(spriteBatch);
+    }
+
     private static void DrawIntroVehicleTexture(SpriteBatch spriteBatch, Art art, Vector2 localPosition, Point size, Color tint)
     {
         spriteBatch.Draw(AssetManager.GetTexture(art), GetIntroVehicleModuleBounds(localPosition, size), tint);
+    }
+
+    private static void DrawFinalVehicleTexture(SpriteBatch spriteBatch, Art art, Vector2 localPosition, Point size, Color tint)
+    {
+        spriteBatch.Draw(AssetManager.GetTexture(art), GetFinalVehicleModuleBounds(localPosition, size), tint);
     }
 
     private static void DrawIntroFuelDisplay(SpriteBatch spriteBatch)
@@ -507,6 +555,26 @@ public class WalkingScene : Scene, IPlayerScene
         spriteBatch.Draw(AssetManager.GetTexture(Art.pixel), filledRect, Color.Blue);
     }
 
+    private void DrawFinalFuelDisplay(SpriteBatch spriteBatch)
+    {
+        Vector2 localPosition = new(
+            WorldConfig.FuelDisplayBottomLeftLocal.X,
+            WorldConfig.FuelDisplayBottomLeftLocal.Y - WorldConfig.FuelDisplaySize.Y);
+        Rectangle bounds = GetFinalVehicleModuleBounds(localPosition, WorldConfig.FuelDisplaySize);
+        int filledHeight = (int)MathF.Round(bounds.Height * MathHelper.Clamp(_finalTransition.FuelRatio, 0f, 1f));
+        if (filledHeight <= 0)
+        {
+            return;
+        }
+
+        Rectangle filledRect = new(
+            bounds.X,
+            bounds.Bottom - filledHeight,
+            bounds.Width,
+            filledHeight);
+        spriteBatch.Draw(AssetManager.GetTexture(Art.pixel), filledRect, Color.Blue);
+    }
+
     private static Rectangle GetIntroVehicleModuleBounds(Vector2 localPosition, Point size)
     {
         return new Rectangle(
@@ -514,6 +582,26 @@ public class WalkingScene : Scene, IPlayerScene
             (int)MathF.Round(IntroVehiclePosition.Y + localPosition.Y),
             size.X,
             size.Y);
+    }
+
+    private static Rectangle GetFinalVehicleModuleBounds(Vector2 localPosition, Point size)
+    {
+        return new Rectangle(
+            (int)MathF.Round(FinalVehiclePosition.X + localPosition.X),
+            (int)MathF.Round(FinalVehiclePosition.Y + localPosition.Y),
+            size.X,
+            size.Y);
+    }
+
+    private Color GetDamageTint(bool isDamaged)
+    {
+        if (!isDamaged)
+        {
+            return Color.White;
+        }
+
+        int frame = (int)(_moduleDamageBlinkTimer / DamageBlinkInterval);
+        return frame % 2 == 0 ? Color.Red : Color.White;
     }
 
     private void DrawCapsule(SpriteBatch spriteBatch)

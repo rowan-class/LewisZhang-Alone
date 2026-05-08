@@ -13,6 +13,8 @@ public enum Art
     Player4,
     Player5,
     Vehicle,
+    FuelBarrel,
+    RepairGun,
     FuelPortClosed,
     FuelPortOpen,
     FuelPortLit,
@@ -42,13 +44,14 @@ public static class AssetManager
     public static void LoadContent(ContentManager content, GraphicsDevice graphicsDevice)
     {
         textures.Clear();
-
         textures[Art.Player1] = content.Load<Texture2D>("player/player1");
         textures[Art.Player2] = content.Load<Texture2D>("player/player2");
         textures[Art.Player3] = content.Load<Texture2D>("player/player3");
         textures[Art.Player4] = content.Load<Texture2D>("player/player4");
         textures[Art.Player5] = content.Load<Texture2D>("player/player5");
         textures[Art.Vehicle] = content.Load<Texture2D>("Vehicle");
+        textures[Art.FuelBarrel] = content.Load<Texture2D>("FuelBarrel");
+        textures[Art.RepairGun] = content.Load<Texture2D>("repair");
         textures[Art.FuelPortClosed] = content.Load<Texture2D>("modules/fuel_port/fuel_port1");
         textures[Art.FuelPortOpen] = content.Load<Texture2D>("modules/fuel_port/fuel_port2");
         textures[Art.FuelPortLit] = content.Load<Texture2D>("modules/fuel_port/fuel_port3");
