@@ -46,7 +46,7 @@
   {
     "id": "night_warning",
     "type": "dialogue",
-    "triggerDistance": 15237.5,
+    "triggerDistance": 15037.5,
     "dialogue": [
       {
         "speaker": "houston",
@@ -58,6 +58,17 @@
     "id": "solar_night_1",
     "type": "solar_night",
     "triggerDistance": 15150.0
+  },
+  {
+    "id": "repair_gun_hint",
+    "type": "dialogue",
+    "triggerDistance": 15650.0,
+    "dialogue": [
+      {
+        "speaker": "houston",
+        "text": "Telemetry shows a repair gun ahead on the ground. Pick it up before the rover systems start failing."
+      }
+    ]
   },
   {
     "id": "repair_gun_drop",

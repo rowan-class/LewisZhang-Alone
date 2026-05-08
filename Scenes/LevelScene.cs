@@ -9,6 +9,8 @@ public class LevelScene : Scene, IPlayerScene
 {
     private const float DebugSpeedAdjustPerSecond = 240f;
     private const float RepairFlashDuration = 0.25f;
+    private const int DamageFailureThreshold = 2;
+    private const float DamageFailureDuration = 10f;
 
     private readonly Camera2D _camera = new();
     private readonly WorldEventManager _eventManager = new();
@@ -31,6 +33,7 @@ public class LevelScene : Scene, IPlayerScene
     private float _worldScrollX;
     private float _nextFuelSpawnX = 2400f;
     private float _repairFlashTimer;
+    private float _damageFailureTimer;
     private bool _preferOverviewView;
     private bool _vehicleDiscovered = true;
     private bool _initialFuelBarrelsSpawned;
@@ -181,6 +184,7 @@ public class LevelScene : Scene, IPlayerScene
         TryRepairDamagedComponent();
         HandleFuelBarrelInteraction();
         _autoPickupModule.Update(gameTime);
+        UpdateDamageFailureState(dt);
 
         _repairFlashTimer = MathF.Max(0f, _repairFlashTimer - dt);
         UpdateCameraMode();
@@ -230,6 +234,7 @@ public class LevelScene : Scene, IPlayerScene
         spriteBatch.Begin(samplerState: SamplerState.PointClamp);
         DrawHud(spriteBatch);
         DrawRepairFlash(spriteBatch);
+        DrawDamageFailureWarning(spriteBatch);
         _textBox.Draw(spriteBatch);
         spriteBatch.End();
     }
@@ -636,6 +641,7 @@ public class LevelScene : Scene, IPlayerScene
             FuelPortDamaged = _fuelPort.IsDamaged,
             SolarPanelDamaged = _solarPanel.IsDamaged,
             ThrottleDamaged = _throttle.IsDamaged,
+            DamageFailureTimer = _damageFailureTimer,
             WorldEvents = _eventManager.CaptureSaveData()
         };
 
@@ -701,6 +707,7 @@ public class LevelScene : Scene, IPlayerScene
         _vehicle.RestoreSaveData(data.Vehicle);
         _throttle.RestoreSaveData(data.Throttle);
         _fuelPort.SetLit(data.FuelPortLit);
+        _damageFailureTimer = MathF.Max(0f, data.DamageFailureTimer);
         _autoPickupModule.SetEnabled(data.AutoPickupEnabled);
         if (data.AutoPickupDamaged)
         {
@@ -938,6 +945,62 @@ public class LevelScene : Scene, IPlayerScene
     private void TriggerRepairFlash()
     {
         _repairFlashTimer = RepairFlashDuration;
+    }
+
+    private void UpdateDamageFailureState(float dt)
+    {
+        if (CountDamagedVehicleSystems() < DamageFailureThreshold)
+        {
+            _damageFailureTimer = 0f;
+            return;
+        }
+
+        _damageFailureTimer += dt;
+        if (_damageFailureTimer >= DamageFailureDuration)
+        {
+            ChangeScene("gameOver");
+        }
+    }
+
+    private int CountDamagedVehicleSystems()
+    {
+        int damagedCount = 0;
+
+        if (_fuelPort.IsDamaged)
+        {
+            damagedCount++;
+        }
+
+        if (_solarPanel.IsDamaged)
+        {
+            damagedCount++;
+        }
+
+        if (_throttle.IsDamaged)
+        {
+            damagedCount++;
+        }
+
+        if (_autoPickupModule.IsDamaged)
+        {
+            damagedCount++;
+        }
+
+        return damagedCount;
+    }
+
+    private void DrawDamageFailureWarning(SpriteBatch spriteBatch)
+    {
+        if (CountDamagedVehicleSystems() < DamageFailureThreshold)
+        {
+            return;
+        }
+
+        float pulse = 0.5f + 0.5f * MathF.Sin(_damageFailureTimer * 10f);
+        float urgency = MathHelper.Clamp(_damageFailureTimer / DamageFailureDuration, 0f, 1f);
+        float alpha = MathHelper.Lerp(0.12f, 0.45f, urgency) * pulse;
+        Rectangle bounds = new(0, 0, WorldConfig.ScreenWidth, WorldConfig.ScreenHeight);
+        spriteBatch.Draw(AssetManager.GetTexture(Art.pixel), bounds, Color.Red * alpha);
     }
 
     private void BreakRepairGuns()

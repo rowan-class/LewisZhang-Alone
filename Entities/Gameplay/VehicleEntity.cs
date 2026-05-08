@@ -3,14 +3,47 @@ using Microsoft.Xna.Framework;
 
 namespace LewisZhang_Alone;
 
+public class VehicleResources
+{
+    public const float MaxFuel = 100f;
+    public const float InitialFuel = 20f;
+
+    public float Fuel { get; private set; } = InitialFuel;
+    public float FuelRatio => System.Math.Clamp(Fuel / MaxFuel, 0f, 1f);
+    public bool HasFuel => Fuel > 0f;
+
+    public void AddFuelByRatio(float ratio)
+    {
+        if (ratio <= 0f)
+        {
+            return;
+        }
+
+        Fuel = System.Math.Clamp(Fuel + MaxFuel * ratio, 0f, MaxFuel);
+    }
+
+    public void ConsumeFuel(float amount)
+    {
+        if (amount <= 0f)
+        {
+            return;
+        }
+
+        Fuel = System.MathF.Max(0f, Fuel - amount);
+    }
+
+    public void SetFuel(float fuel)
+    {
+        Fuel = System.Math.Clamp(fuel, 0f, MaxFuel);
+    }
+}
+
 public class VehicleEntity : SpriteEntity
 {
     private const float PoweredAcceleration = 100f;
     private const float CoastDeceleration = 80f;
     private const float HandbrakeDeceleration = 240f;
     private const float SolarSpeedBonus = 50f;
-    private const float MaxFuel = 100f;
-    private const float InitialFuel = 20f;
     private const float AcceleratingFuelUsePerSecond = 4f;
     private const float CruisingFuelUsePerSecond = 1.5f;
 
@@ -38,16 +71,17 @@ public class VehicleEntity : SpriteEntity
         new Rectangle(910, 110, 20, 320),
     };
 
+    private readonly VehicleResources _resources = new();
     private float _speed;
-    private float _fuel = InitialFuel;
 
     public bool Powered { get; private set; }
     public bool HandbrakeActive { get; private set; }
     public bool SolarDriveActive { get; private set; }
     public float BaseSpeed => _speed;
     public float Speed => HandbrakeActive ? 0f : System.MathF.Min(WorldConfig.VehicleMaxSpeed, _speed + GetSolarSpeedBonus());
-    public float Fuel => _fuel;
-    public float FuelRatio => System.Math.Clamp(_fuel / MaxFuel, 0f, 1f);
+    public VehicleResources Resources => _resources;
+    public float Fuel => _resources.Fuel;
+    public float FuelRatio => _resources.FuelRatio;
     public Rectangle CabinBoundsWorld => OffsetRectangle(WorldConfig.VehicleCabinBoundsLocal);
 
     public VehicleEntity()
@@ -69,7 +103,7 @@ public class VehicleEntity : SpriteEntity
                 HandbrakeActive = false;
             }
         }
-        else if (Powered && _fuel > 0f)
+        else if (Powered && _resources.HasFuel)
         {
             float maximumBaseSpeed = GetMaximumBaseSpeed();
             bool isCruising = _speed >= maximumBaseSpeed;
@@ -90,7 +124,7 @@ public class VehicleEntity : SpriteEntity
 
     public void SetPowered(bool powered)
     {
-        Powered = !HandbrakeActive && powered && _fuel > 0f;
+        Powered = !HandbrakeActive && powered && _resources.HasFuel;
     }
 
     public void AdjustSpeed(float delta)
@@ -131,7 +165,7 @@ public class VehicleEntity : SpriteEntity
             return;
         }
 
-        _fuel = System.Math.Clamp(_fuel + MaxFuel * ratio, 0f, MaxFuel);
+        _resources.AddFuelByRatio(ratio);
     }
 
     public VehicleSaveData CaptureSaveData()
@@ -139,7 +173,7 @@ public class VehicleEntity : SpriteEntity
         return new VehicleSaveData
         {
             Speed = _speed,
-            Fuel = _fuel,
+            Fuel = _resources.Fuel,
             Powered = Powered,
             HandbrakeActive = HandbrakeActive,
             SolarDriveActive = SolarDriveActive
@@ -154,10 +188,10 @@ public class VehicleEntity : SpriteEntity
         }
 
         _speed = System.Math.Clamp(data.Speed, 0f, WorldConfig.VehicleMaxSpeed);
-        _fuel = System.Math.Clamp(data.Fuel, 0f, MaxFuel);
+        _resources.SetFuel(data.Fuel);
         HandbrakeActive = data.HandbrakeActive && _speed > 0f;
         SolarDriveActive = Game1.SolarPanelEnabled && Game1.SolarPanelHasEnergy && data.SolarDriveActive && !HandbrakeActive;
-        Powered = !HandbrakeActive && data.Powered && _fuel > 0f;
+        Powered = !HandbrakeActive && data.Powered && _resources.HasFuel;
     }
 
     public bool TryActivateHandbrake()
@@ -196,9 +230,9 @@ public class VehicleEntity : SpriteEntity
 
     private void ConsumeFuel(float amount)
     {
-        _fuel = System.MathF.Max(0f, _fuel - amount);
+        _resources.ConsumeFuel(amount);
 
-        if (_fuel <= 0f)
+        if (!_resources.HasFuel)
         {
             Powered = false;
         }

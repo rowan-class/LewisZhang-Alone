@@ -6,12 +6,26 @@ using Microsoft.Xna.Framework.Input;
 
 namespace LewisZhang_Alone;
 
+public enum DebugStartLevel
+{
+    None,
+    IntroWalk,
+    Vehicle,
+    FinalWalk
+}
+
 public class Game1 : Game
 {
     private const float BackgroundCrossfadeDuration = 2.4f;
 
     // Default debug state. Press F3 in-game to toggle collision bounds.
     public static bool Debug = true;
+    // Set this to jump straight into a level while debugging.
+    public static DebugStartLevel DebugStartLevel = DebugStartLevel.FinalWalk;
+// DebugStartLevel.None       // 正常从 start screen 开始
+// DebugStartLevel.IntroWalk  // 直接进开头走路场景
+// DebugStartLevel.Vehicle    // 直接进车 level
+// DebugStartLevel.FinalWalk  // 直接进结尾走路场景
     // Flip this to show / enable the solar module.
     public static bool SolarPanelEnabled = false;
     public static bool SolarPanelHasEnergy = true;
@@ -130,12 +144,24 @@ public class Game1 : Game
             ["level1"] = () => new LevelScene(),
             ["finalWalk"] = () => new WalkingScene(WalkingSceneMode.Final),
             ["end"] = () => new EndScene(),
+            ["gameOver"] = () => new GameOverScene(),
         };
 
-        _currentScene = _sceneFactories["start"]();
+        _currentScene = _sceneFactories[GetInitialSceneKey()]();
         _currentScene.Open();
 
         base.Initialize();
+    }
+
+    private static string GetInitialSceneKey()
+    {
+        return DebugStartLevel switch
+        {
+            DebugStartLevel.IntroWalk => "newGame",
+            DebugStartLevel.Vehicle => "level1",
+            DebugStartLevel.FinalWalk => "finalWalk",
+            _ => "start"
+        };
     }
 
     protected override void LoadContent()

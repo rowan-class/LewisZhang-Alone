@@ -25,15 +25,27 @@ public class WalkingScene : Scene, IPlayerScene
     private const float FinalStormDuration = 5f;
     private const float StormScrollSpeed = 760f;
     private const float StormSheetScreenWidth = 1800f;
-    private const int IntroWorldWidth = 3200;
+    private const int IntroWorldWidth = 5600;
     private const int FinalWorldWidth = 5200;
+    private const int WalkingCloseViewWidth = WorldConfig.ScreenWidth;
+    private const int WalkingCloseViewHeight = WorldConfig.ScreenHeight;
     private const int GroundHeight = 160;
 
     private static readonly Vector2 IntroPlayerStart = new(160f, WorldConfig.FakeGroundLocalRect.Y - 48f);
-    private static readonly Vector2 IntroVehiclePosition = new(1900f, WorldConfig.FakeGroundLocalRect.Y - 540f);
+    private static readonly Vector2 IntroVehiclePosition = new(3700f, WorldConfig.FakeGroundLocalRect.Y - 540f);
     private static readonly Vector2 FinalVehiclePosition = new(180f, WorldConfig.FakeGroundLocalRect.Y - 540f);
     private static readonly Vector2 FinalPlayerStart = new(160f, WorldConfig.FakeGroundLocalRect.Y - 48f);
     private static readonly Vector2 FinalCapsulePosition = new(3700f, WorldConfig.FakeGroundLocalRect.Y - 256f);
+    private static readonly Rectangle[] IntroTerrainRectangles =
+    {
+        new Rectangle(508, 1278, 199, 97),
+        new Rectangle(804, 1278, 87, 139),
+        new Rectangle(891, 1318, 87, 99),
+        new Rectangle(1160, 1374, 55, 36),
+    };
+    private static readonly Rectangle[] FinalTerrainRectangles =
+    {
+    };
     private static readonly Rectangle[] FinalVehiclePlatformLocalRectangles =
     {
         new Rectangle(24, 422, 900, 16),
@@ -98,7 +110,7 @@ public class WalkingScene : Scene, IPlayerScene
 
     public bool IsPlayerCarryingItem => false;
     public bool IsPlayerInputLocked => _textBox.IsActiveDialogue || _isLaunching;
-    public bool CanPlayerMoveLeft => _mode == WalkingSceneMode.Final;
+    public bool CanPlayerMoveLeft => true;
     public float VehicleSpeed => 0f;
     public Rectangle PlayerMovementBounds => _movementBounds;
 
@@ -110,6 +122,11 @@ public class WalkingScene : Scene, IPlayerScene
     public IEnumerable<Rectangle> GetSolidRectangles()
     {
         yield return GetGroundBounds();
+
+        foreach (Rectangle rect in GetWalkingTerrainRectangles())
+        {
+            yield return rect;
+        }
 
         if (_mode == WalkingSceneMode.Intro)
         {
@@ -174,6 +191,7 @@ public class WalkingScene : Scene, IPlayerScene
         if (_mode == WalkingSceneMode.Intro)
         {
             _introVehicle.Draw(spriteBatch);
+            DrawIntroVehicleModules(spriteBatch);
         }
         else
         {
@@ -195,6 +213,7 @@ public class WalkingScene : Scene, IPlayerScene
 
         spriteBatch.Begin(samplerState: SamplerState.PointClamp);
         DrawStormOverlay(spriteBatch);
+        DrawDebugHud(spriteBatch);
         _textBox.Draw(spriteBatch);
         spriteBatch.End();
     }
@@ -226,6 +245,11 @@ public class WalkingScene : Scene, IPlayerScene
 
             yield return GetCapsuleLowerCollisionBounds();
             yield return GetCapsuleEntranceBounds();
+        }
+
+        foreach (Rectangle rect in GetWalkingTerrainRectangles())
+        {
+            yield return rect;
         }
     }
 
@@ -328,10 +352,11 @@ public class WalkingScene : Scene, IPlayerScene
 
     private void UpdateCamera(float dt)
     {
+        int viewWidth = GetCameraViewWidth();
         float targetX = MathHelper.Clamp(
-            _player.Position.X - WorldConfig.ScreenWidth * CameraFollowAnchorX,
+            _player.Position.X - viewWidth * CameraFollowAnchorX,
             0f,
-            MathF.Max(0f, _worldWidth - WorldConfig.ScreenWidth));
+            MathF.Max(0f, _worldWidth - viewWidth));
 
         float smoothing = dt <= 0f ? 1f : 1f - MathF.Exp(-CameraSharpness * dt);
         _cameraX = MathHelper.Lerp(_cameraX, targetX, smoothing);
@@ -339,17 +364,43 @@ public class WalkingScene : Scene, IPlayerScene
 
     private Matrix GetViewMatrix()
     {
-        return Matrix.CreateTranslation(-_cameraX, -GetCameraY(), 0f);
+        float scaleX = (float)WorldConfig.ScreenWidth / GetCameraViewWidth();
+        float scaleY = (float)WorldConfig.ScreenHeight / GetCameraViewHeight();
+
+        return Matrix.CreateTranslation(-_cameraX, -GetCameraY(), 0f)
+            * Matrix.CreateScale(scaleX, scaleY, 1f);
     }
 
-    private static float GetCameraY()
+    private float GetCameraY()
     {
-        return WorldConfig.FakeGroundLocalRect.Y - WorldConfig.ScreenHeight + 120f;
+        return WorldConfig.FakeGroundLocalRect.Y - GetCameraViewHeight() + 120f;
+    }
+
+    private int GetCameraViewWidth()
+    {
+        return _mode == WalkingSceneMode.Intro ? WorldConfig.OverviewWidth : WalkingCloseViewWidth;
+    }
+
+    private int GetCameraViewHeight()
+    {
+        return _mode == WalkingSceneMode.Intro ? WorldConfig.OverviewHeight : WalkingCloseViewHeight;
     }
 
     private Rectangle GetGroundBounds()
     {
         return new Rectangle(0, WorldConfig.FakeGroundLocalRect.Y, _worldWidth, GroundHeight);
+    }
+
+    private IEnumerable<Rectangle> GetWalkingTerrainRectangles()
+    {
+        Rectangle[] terrain = _mode == WalkingSceneMode.Intro
+            ? IntroTerrainRectangles
+            : FinalTerrainRectangles;
+
+        foreach (Rectangle rect in terrain)
+        {
+            yield return rect;
+        }
     }
 
     private static Rectangle GetIntroVehicleBarrierBounds()
@@ -421,9 +472,48 @@ public class WalkingScene : Scene, IPlayerScene
         BackgroundRenderer.DrawLooping(spriteBatch, 0f, _worldWidth);
     }
 
-    private static void DrawGround(SpriteBatch spriteBatch)
+    private void DrawGround(SpriteBatch spriteBatch)
     {
         _ = spriteBatch;
+    }
+
+    private static void DrawIntroVehicleModules(SpriteBatch spriteBatch)
+    {
+        DrawIntroVehicleTexture(spriteBatch, Art.FuelPortClosed, WorldConfig.FuelPortTopLeftLocal, WorldConfig.FuelPortSize, Color.White);
+        DrawIntroVehicleTexture(spriteBatch, Art.FuelButtonIdle, WorldConfig.FuelButtonTopLeftLocal, WorldConfig.FuelButtonSize, Color.White);
+        DrawIntroVehicleTexture(spriteBatch, Art.FuelButtonIdle, WorldConfig.HandbrakeButtonTopLeftLocal, WorldConfig.FuelButtonSize, Color.White);
+        DrawIntroVehicleTexture(spriteBatch, Art.Throttle, WorldConfig.ThrottleIdleTopLeftLocal, WorldConfig.ThrottleSize, Color.White);
+        DrawIntroVehicleTexture(spriteBatch, Art.AutoPickupModule, WorldConfig.AutoPickupModuleTopLeftLocal, WorldConfig.AutoPickupModuleSize, Color.Red);
+        DrawIntroFuelDisplay(spriteBatch);
+    }
+
+    private static void DrawIntroVehicleTexture(SpriteBatch spriteBatch, Art art, Vector2 localPosition, Point size, Color tint)
+    {
+        spriteBatch.Draw(AssetManager.GetTexture(art), GetIntroVehicleModuleBounds(localPosition, size), tint);
+    }
+
+    private static void DrawIntroFuelDisplay(SpriteBatch spriteBatch)
+    {
+        Vector2 localPosition = new(
+            WorldConfig.FuelDisplayBottomLeftLocal.X,
+            WorldConfig.FuelDisplayBottomLeftLocal.Y - WorldConfig.FuelDisplaySize.Y);
+        Rectangle bounds = GetIntroVehicleModuleBounds(localPosition, WorldConfig.FuelDisplaySize);
+        int filledHeight = (int)MathF.Round(bounds.Height * (VehicleResources.InitialFuel / VehicleResources.MaxFuel));
+        Rectangle filledRect = new(
+            bounds.X,
+            bounds.Bottom - filledHeight,
+            bounds.Width,
+            filledHeight);
+        spriteBatch.Draw(AssetManager.GetTexture(Art.pixel), filledRect, Color.Blue);
+    }
+
+    private static Rectangle GetIntroVehicleModuleBounds(Vector2 localPosition, Point size)
+    {
+        return new Rectangle(
+            (int)MathF.Round(IntroVehiclePosition.X + localPosition.X),
+            (int)MathF.Round(IntroVehiclePosition.Y + localPosition.Y),
+            size.X,
+            size.Y);
     }
 
     private void DrawCapsule(SpriteBatch spriteBatch)
@@ -451,6 +541,23 @@ public class WalkingScene : Scene, IPlayerScene
                 WorldConfig.ScreenHeight);
             spriteBatch.Draw(sandstorm, bounds, Color.White * alpha);
         }
+    }
+
+    private void DrawDebugHud(SpriteBatch spriteBatch)
+    {
+        if (!Game1.Debug)
+        {
+            return;
+        }
+
+        Vector2 startPosition = _mode == WalkingSceneMode.Intro ? IntroPlayerStart : FinalPlayerStart;
+        float walkedDistance = MathF.Max(0f, _player.Position.X - startPosition.X);
+        string sceneName = _mode == WalkingSceneMode.Intro ? "Intro Walk" : "Final Walk";
+        string text = sceneName
+            + "  Distance: " + walkedDistance.ToString("0.0")
+            + "  Player X: " + _player.Position.X.ToString("0.0");
+
+        spriteBatch.DrawString(AssetManager.ArialFont, text, new Vector2(20, 20), Color.LightGreen);
     }
 
     private float GetStormAlpha()

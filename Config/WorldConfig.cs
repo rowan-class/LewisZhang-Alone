@@ -56,7 +56,7 @@ public static class WorldConfig
     public static readonly Vector2 SolarPanelTopLeftLocal = new(180f, 6f);
     public static readonly Vector2 ThrottleIdleTopLeftLocal = new(760f, 168f);
     public static readonly Vector2 SolarInstallStationButtonTopLeftLocal = new(1200f, 186f);
-    public static readonly Vector2 SolarInstallAnimatedPanelTopLeftLocal = new(480f, -120f);
+    public static readonly Vector2 SolarInstallAnimatedPanelTopLeftLocal = new(480f, 50f*6+36f);
     public const float ReturnCapsuleSpawnScreenX = 3150f;
     public static readonly Rectangle ReturnCapsuleLowerCollisionLocalRect = new(0, 146, 256, 110);
     public static readonly Rectangle ReturnCapsuleEntranceLocalRect = new(96, 64, 64, 64);
