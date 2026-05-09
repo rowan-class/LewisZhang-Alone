@@ -55,11 +55,6 @@
     ]
   },
   {
-    "id": "solar_night_1",
-    "type": "solar_night",
-    "triggerDistance": 15150.0
-  },
-  {
     "id": "repair_gun_hint",
     "type": "dialogue",
     "triggerDistance": 15650.0,

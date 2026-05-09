@@ -13,6 +13,7 @@ public class LevelScene : Scene, IPlayerScene
     private const float DamageFailureDuration = 10f;
     private const float DamageFailureDeathMaxDistance = 35000f;
     private const float OffscreenFailureDuration = 10f;
+    private const float RefuelWindowDuration = 60f;
     private const float SolarInstallStationTriggerDistance = 4300f;
     private const float RockEventClearance = 320f;
     private const float InitialRockClearDistance = 500f;
@@ -46,6 +47,7 @@ public class LevelScene : Scene, IPlayerScene
     private float _repairFlashTimer;
     private float _damageFailureTimer;
     private float _offscreenFailureTimer;
+    private float _refuelWindowTimer = RefuelWindowDuration;
     private float _moduleDamageBlinkTimer;
     private bool _preferOverviewView;
     private bool _vehicleDiscovered = true;
@@ -238,7 +240,8 @@ public class LevelScene : Scene, IPlayerScene
         _fuelPort.Update(gameTime);
         float fuelBeforeButtonUpdate = _vehicle.Fuel;
         _fuelButton.Update(gameTime);
-        if (_vehicle.Fuel > fuelBeforeButtonUpdate)
+        bool didRefuel = _vehicle.Fuel > fuelBeforeButtonUpdate;
+        if (didRefuel)
         {
             _fuelTutorialCompleted = true;
         }
@@ -264,6 +267,7 @@ public class LevelScene : Scene, IPlayerScene
         TryRepairDamagedComponent();
         HandleFuelBarrelInteraction();
         _autoPickupModule.Update(gameTime);
+        UpdateRefuelWindowState(dt, didRefuel);
         UpdateDamageFailureState(dt);
 
         _repairFlashTimer = MathF.Max(0f, _repairFlashTimer - dt);
@@ -322,6 +326,7 @@ public class LevelScene : Scene, IPlayerScene
         spriteBatch.Begin(samplerState: SamplerState.PointClamp);
         DrawHud(spriteBatch);
         DrawRepairFlash(spriteBatch);
+        DrawRefuelWindowWarning(spriteBatch);
         DrawDamageFailureWarning(spriteBatch);
         DrawOffscreenFailureWarning(spriteBatch);
         if (!_isPaused)
@@ -991,6 +996,7 @@ public class LevelScene : Scene, IPlayerScene
             SolarPanelDamaged = _solarPanel.IsDamaged,
             ThrottleDamaged = _throttle.IsDamaged,
             DamageFailureTimer = _damageFailureTimer,
+            RefuelWindowTimer = _refuelWindowTimer,
             WorldEvents = _eventManager.CaptureSaveData()
         };
 
@@ -1058,6 +1064,9 @@ public class LevelScene : Scene, IPlayerScene
         _throttle.RestoreSaveData(data.Throttle);
         _fuelPort.SetLit(data.FuelPortLit);
         _damageFailureTimer = MathF.Max(0f, data.DamageFailureTimer);
+        _refuelWindowTimer = data.RefuelWindowTimer.HasValue
+            ? MathHelper.Clamp(data.RefuelWindowTimer.Value, 0f, RefuelWindowDuration)
+            : RefuelWindowDuration;
         _autoPickupModule.SetEnabled(data.AutoPickupEnabled);
         if (data.AutoPickupDamaged)
         {
@@ -1307,6 +1316,27 @@ public class LevelScene : Scene, IPlayerScene
         TriggerRepairFlash();
     }
 
+    private void UpdateRefuelWindowState(float dt, bool didRefuel)
+    {
+        if (_fuelPort.IsDamaged || _vehicle.Fuel > 0f)
+        {
+            _refuelWindowTimer = RefuelWindowDuration;
+            return;
+        }
+
+        if (didRefuel)
+        {
+            _refuelWindowTimer = RefuelWindowDuration;
+            return;
+        }
+
+        _refuelWindowTimer = MathF.Max(0f, _refuelWindowTimer - dt);
+        if (_refuelWindowTimer <= 0f)
+        {
+            ChangeScene("gameOver");
+        }
+    }
+
     private void UpdateDamageFailureState(float dt)
     {
         if (CountDamagedVehicleSystems() < DamageFailureThreshold)
@@ -1370,6 +1400,24 @@ public class LevelScene : Scene, IPlayerScene
         return damagedCount;
     }
 
+    private void DrawRefuelWindowWarning(SpriteBatch spriteBatch)
+    {
+        if (_fuelPort.IsDamaged || _vehicle.Fuel > 0f)
+        {
+            return;
+        }
+
+        DrawCountdownWarning(
+            spriteBatch,
+            "OUT OF FUEL",
+            "Refuel in ",
+            RefuelWindowDuration - _refuelWindowTimer,
+            RefuelWindowDuration,
+            256f,
+            1.7f,
+            1.25f);
+    }
+
     private void DrawDamageFailureWarning(SpriteBatch spriteBatch)
     {
         if (CountDamagedVehicleSystems() < DamageFailureThreshold)
@@ -1382,7 +1430,7 @@ public class LevelScene : Scene, IPlayerScene
             return;
         }
 
-        DrawFailureCountdownWarning(
+        DrawCountdownWarning(
             spriteBatch,
             "CRITICAL SYSTEM FAILURE",
             "Shutdown in ",
@@ -1400,7 +1448,7 @@ public class LevelScene : Scene, IPlayerScene
             return;
         }
 
-        DrawFailureCountdownWarning(
+        DrawCountdownWarning(
             spriteBatch,
             "STAY NEAR THE ROVER",
             "Danger in ",
@@ -1411,7 +1459,7 @@ public class LevelScene : Scene, IPlayerScene
             1.25f);
     }
 
-    private void DrawFailureCountdownWarning(
+    private void DrawCountdownWarning(
         SpriteBatch spriteBatch,
         string title,
         string countdownPrefix,

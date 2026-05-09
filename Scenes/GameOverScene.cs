@@ -41,7 +41,7 @@ public class GameOverScene : Scene
         MenuSceneVisuals.DrawPanel(spriteBatch, panel, new Color(18, 10, 12, 210), new Color(210, 76, 58, 220));
         MenuSceneVisuals.DrawCenteredText(spriteBatch, "MISSION FAILED", new Vector2(640f, 172f), new Color(255, 222, 202), 3f);
         MenuSceneVisuals.DrawDivider(spriteBatch, 640, 232, 330, new Color(218, 78, 58));
-        MenuSceneVisuals.DrawCenteredText(spriteBatch, "Too many rover systems stayed broken.", new Vector2(640f, 264f), new Color(236, 220, 210), 1.25f);
+        MenuSceneVisuals.DrawCenteredText(spriteBatch, "The rover could not keep moving.", new Vector2(640f, 264f), new Color(236, 220, 210), 1.25f);
         MenuSceneVisuals.DrawCenteredText(spriteBatch, "PRESS ENTER TO TRY AGAIN", new Vector2(640f, 332f), new Color(255, 204, 118), 1.1f);
         spriteBatch.End();
     }

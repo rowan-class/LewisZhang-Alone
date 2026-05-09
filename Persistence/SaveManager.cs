@@ -28,6 +28,7 @@ public class SaveData
     public bool SolarPanelDamaged { get; set; }
     public bool ThrottleDamaged { get; set; }
     public float DamageFailureTimer { get; set; }
+    public float? RefuelWindowTimer { get; set; }
     public List<WorldEventSaveData> WorldEvents { get; set; } = new();
     public List<FuelBarrelSaveData> FuelBarrels { get; set; } = new();
     public List<RepairGunSaveData> RepairGuns { get; set; } = new();
