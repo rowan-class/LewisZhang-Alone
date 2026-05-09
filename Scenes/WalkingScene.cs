@@ -31,6 +31,11 @@ public class WalkingScene : Scene, IPlayerScene
     private const int WalkingCloseViewWidth = WorldConfig.ScreenWidth;
     private const int WalkingCloseViewHeight = WorldConfig.ScreenHeight;
     private const int GroundHeight = 160;
+    private const float IntroTutorialFuelBarrelX = 1080f;
+    private const float FuelBarrelPickupDistance = 90f;
+    private const float IntroMovePromptEndDistance = 520f;
+    private const float IntroFuelPromptStartDistance = 700f;
+    private const float FloatingPromptScale = 1.65f;
 
     private static readonly Vector2 IntroPlayerStart = new(160f, WorldConfig.FakeGroundLocalRect.Y - 48f);
     private static readonly Vector2 IntroVehiclePosition = new(3700f, WorldConfig.FakeGroundLocalRect.Y - 540f);
@@ -62,6 +67,7 @@ public class WalkingScene : Scene, IPlayerScene
     private readonly Player _player;
     private readonly VehicleEntity _introVehicle;
     private readonly VehicleEntity _finalVehicle;
+    private readonly FuelBarrelEntity _introFuelBarrel;
     private readonly List<WalkingDialogueDefinition> _dialogueDefinitions;
     private readonly HashSet<string> _triggeredDialogueIds = new();
     private readonly RockObstacle[] _rockObstacles;
@@ -77,6 +83,7 @@ public class WalkingScene : Scene, IPlayerScene
     private string _pendingScene;
     private bool _isLaunching;
     private bool _isPaused;
+    private bool _introFuelBarrelTutorialCompleted;
     private float _capsuleUpperOffsetY;
 
     public WalkingScene(WalkingSceneMode mode)
@@ -96,12 +103,14 @@ public class WalkingScene : Scene, IPlayerScene
             _introVehicle = new VehicleEntity();
             _introVehicle.SetPosition(IntroVehiclePosition);
             _introVehicle.SetScene(this);
+            _introFuelBarrel = CreateIntroTutorialFuelBarrel();
             _finalVehicle = null;
             _finalTransition = null;
         }
         else
         {
             _introVehicle = null;
+            _introFuelBarrel = null;
             LevelToFinalWalkTransition transition = SceneTransitionContext.ConsumeLevelToFinalWalk();
             _finalTransition = transition ?? new LevelToFinalWalkTransition { FuelRatio = VehicleResources.InitialFuel / VehicleResources.MaxFuel };
             _moduleDamageBlinkTimer = _finalTransition.ModuleDamageBlinkTimer;
@@ -117,7 +126,7 @@ public class WalkingScene : Scene, IPlayerScene
         UpdateCamera(1f / 60f);
     }
 
-    public bool IsPlayerCarryingItem => false;
+    public bool IsPlayerCarryingItem => _introFuelBarrel?.IsCarried == true;
     public bool IsPlayerInputLocked => _textBox.IsActiveDialogue || _isLaunching;
     public bool CanPlayerMoveLeft => true;
     public float VehicleSpeed => 0f;
@@ -194,6 +203,7 @@ public class WalkingScene : Scene, IPlayerScene
         }
 
         _player.Update(gameTime);
+        UpdateIntroFuelBarrel(gameTime);
 
         if (_mode == WalkingSceneMode.Intro)
         {
@@ -215,17 +225,29 @@ public class WalkingScene : Scene, IPlayerScene
 
         if (_mode == WalkingSceneMode.Intro)
         {
-            _introVehicle.Draw(spriteBatch);
+            _introVehicle.DrawBody(spriteBatch);
             DrawIntroVehicleModules(spriteBatch);
         }
         else
         {
-            _finalVehicle.Draw(spriteBatch);
+            _finalVehicle.DrawBody(spriteBatch);
             DrawFinalVehicleModules(spriteBatch);
             DrawCapsule(spriteBatch);
         }
 
-        DrawWalkingRockObstacles(spriteBatch);
+        if (_mode == WalkingSceneMode.Intro)
+        {
+            _introVehicle.DrawWheelsLayer(spriteBatch);
+            DrawWalkingRockObstacles(spriteBatch);
+            _introFuelBarrel?.Draw(spriteBatch);
+            DrawIntroAutoPickupModule(spriteBatch);
+        }
+        else
+        {
+            _finalVehicle.DrawWheelsLayer(spriteBatch);
+            DrawWalkingRockObstacles(spriteBatch);
+            DrawFinalAutoPickupModule(spriteBatch);
+        }
 
         if (!_isLaunching)
         {
@@ -242,6 +264,7 @@ public class WalkingScene : Scene, IPlayerScene
         spriteBatch.Begin(samplerState: SamplerState.PointClamp);
         DrawStormOverlay(spriteBatch);
         DrawHud(spriteBatch);
+        DrawIntroFloatingPrompts(spriteBatch);
         if (!_isPaused)
         {
             DrawPauseHint(spriteBatch);
@@ -268,6 +291,14 @@ public class WalkingScene : Scene, IPlayerScene
             }
 
             yield return GetIntroVehicleBarrierBounds();
+
+            if (_introFuelBarrel != null)
+            {
+                foreach (Rectangle rect in _introFuelBarrel.GetDebugRectangles())
+                {
+                    yield return rect;
+                }
+            }
         }
         else
         {
@@ -304,7 +335,8 @@ public class WalkingScene : Scene, IPlayerScene
         {
             SceneTransitionContext.IntroToLevel = new IntroToLevelTransition
             {
-                PlayerVehicleLocalPosition = _player.Position - IntroVehiclePosition
+                PlayerVehicleLocalPosition = _player.Position - IntroVehiclePosition,
+                IsCarryingFuelBarrel = _introFuelBarrel?.IsCarried == true
             };
             _pendingScene = "level1";
             if (!StartTriggeredDialogue(VehicleReachedTrigger))
@@ -330,6 +362,87 @@ public class WalkingScene : Scene, IPlayerScene
         }
 
         return false;
+    }
+
+    private void UpdateIntroFuelBarrel(GameTime gameTime)
+    {
+        if (_introFuelBarrel == null)
+        {
+            return;
+        }
+
+        if (ServiceLocator.Input.IsActionPressed(Action.Interact))
+        {
+            if (_introFuelBarrel.IsCarried)
+            {
+                DropIntroFuelBarrel();
+            }
+            else if (IsNearIntroFuelBarrel())
+            {
+                _introFuelBarrel.PickUp(_player);
+                _introFuelBarrelTutorialCompleted = true;
+            }
+        }
+
+        _introFuelBarrel.Update(gameTime);
+    }
+
+    private bool IsNearIntroFuelBarrel()
+    {
+        Rectangle playerBounds = _player.GetBounds();
+        Rectangle barrelBounds = _introFuelBarrel.GetBounds();
+        if (playerBounds == Rectangle.Empty || barrelBounds == Rectangle.Empty)
+        {
+            return false;
+        }
+
+        return Vector2.Distance(playerBounds.Center.ToVector2(), barrelBounds.Center.ToVector2()) <= FuelBarrelPickupDistance;
+    }
+
+    private void DropIntroFuelBarrel()
+    {
+        Vector2 dropPosition = _player.GetCarryAnchor(WorldConfig.FuelBarrelSize);
+        dropPosition.Y = WorldConfig.FakeGroundLocalRect.Y - WorldConfig.FuelBarrelSize.Y;
+        dropPosition.X = MathHelper.Clamp(dropPosition.X, _movementBounds.Left, _movementBounds.Right - WorldConfig.FuelBarrelSize.X);
+        _introFuelBarrel.Drop(PositionSpace.World, dropPosition);
+        _introFuelBarrel.SetPosition(dropPosition);
+    }
+
+    private void DrawIntroFloatingPrompts(SpriteBatch spriteBatch)
+    {
+        if (_mode != WalkingSceneMode.Intro)
+        {
+            return;
+        }
+
+        float walkedDistance = MathF.Max(0f, _player.Position.X - IntroPlayerStart.X);
+        if (walkedDistance < IntroMovePromptEndDistance)
+        {
+            DrawFloatingPrompt(
+                spriteBatch,
+                "A D / ARROWS TO MOVE    SPACE / W / UP TO JUMP",
+                new Vector2(WorldConfig.ScreenWidth / 2f, 132f));
+        }
+
+        if (_introFuelBarrel != null
+            && !_introFuelBarrelTutorialCompleted
+            && walkedDistance >= IntroFuelPromptStartDistance)
+        {
+            DrawFloatingPrompt(
+                spriteBatch,
+                "PRESS G TO PICK UP",
+                new Vector2(WorldConfig.ScreenWidth / 2f, 170f));
+        }
+    }
+
+    private static void DrawFloatingPrompt(SpriteBatch spriteBatch, string text, Vector2 centerPosition)
+    {
+        SpriteFont font = AssetManager.ArialFont;
+        Vector2 size = font.MeasureString(text) * FloatingPromptScale;
+        Vector2 position = new(centerPosition.X - size.X / 2f, centerPosition.Y - size.Y / 2f);
+
+        spriteBatch.DrawString(font, text, position + new Vector2(2f, 2f), Color.Black * 0.75f, 0f, Vector2.Zero, FloatingPromptScale, SpriteEffects.None, 0f);
+        spriteBatch.DrawString(font, text, position, Color.White, 0f, Vector2.Zero, FloatingPromptScale, SpriteEffects.None, 0f);
     }
 
     private bool StartTriggeredDialogue(string trigger)
@@ -530,6 +643,15 @@ public class WalkingScene : Scene, IPlayerScene
         return obstacles.ToArray();
     }
 
+    private FuelBarrelEntity CreateIntroTutorialFuelBarrel()
+    {
+        Vector2 position = new(IntroTutorialFuelBarrelX, WorldConfig.FakeGroundLocalRect.Y - WorldConfig.FuelBarrelSize.Y);
+        FuelBarrelEntity barrel = new(PositionSpace.World, position, 1);
+        barrel.SetScene(this);
+        barrel.SetPosition(position);
+        return barrel;
+    }
+
     private static RockObstacle CreateRandomWalkingRock(Random random, float worldLocalX)
     {
         return random.Next(0, 3) switch
@@ -625,7 +747,6 @@ public class WalkingScene : Scene, IPlayerScene
         DrawIntroVehicleTexture(spriteBatch, Art.FuelButtonIdle, WorldConfig.FuelButtonTopLeftLocal, WorldConfig.FuelButtonSize, Color.White);
         DrawIntroVehicleTexture(spriteBatch, Art.FuelButtonIdle, WorldConfig.HandbrakeButtonTopLeftLocal, WorldConfig.FuelButtonSize, Color.White);
         DrawIntroVehicleTexture(spriteBatch, Art.Throttle, WorldConfig.ThrottleIdleTopLeftLocal, WorldConfig.ThrottleSize, Color.White);
-        DrawIntroVehicleTexture(spriteBatch, Art.AutoPickupModule, WorldConfig.AutoPickupModuleTopLeftLocal, WorldConfig.AutoPickupModuleSize, Color.Red);
         DrawIntroFuelDisplay(spriteBatch);
     }
 
@@ -641,7 +762,6 @@ public class WalkingScene : Scene, IPlayerScene
         DrawFinalVehicleTexture(spriteBatch, Art.FuelButtonIdle, WorldConfig.FuelButtonTopLeftLocal, WorldConfig.FuelButtonSize, GetDamageTint(_finalTransition.FuelPortDamaged));
         DrawFinalVehicleTexture(spriteBatch, _finalTransition.HandbrakeActive ? Art.FuelButtonPressed : Art.FuelButtonIdle, WorldConfig.HandbrakeButtonTopLeftLocal, WorldConfig.FuelButtonSize, Color.White);
         DrawFinalVehicleTexture(spriteBatch, Art.Throttle, WorldConfig.ThrottleIdleTopLeftLocal, WorldConfig.ThrottleSize, GetDamageTint(_finalTransition.ThrottleDamaged));
-        DrawFinalVehicleTexture(spriteBatch, Art.AutoPickupModule, WorldConfig.AutoPickupModuleTopLeftLocal, WorldConfig.AutoPickupModuleSize, GetDamageTint(_finalTransition.AutoPickupDamaged));
 
         if (_finalTransition.SolarPanelInstalled)
         {
@@ -652,6 +772,21 @@ public class WalkingScene : Scene, IPlayerScene
         }
 
         DrawFinalFuelDisplay(spriteBatch);
+    }
+
+    private static void DrawIntroAutoPickupModule(SpriteBatch spriteBatch)
+    {
+        DrawIntroVehicleTexture(spriteBatch, Art.AutoPickupModule, WorldConfig.AutoPickupModuleTopLeftLocal, WorldConfig.AutoPickupModuleSize, Color.Red);
+    }
+
+    private void DrawFinalAutoPickupModule(SpriteBatch spriteBatch)
+    {
+        if (_finalTransition == null)
+        {
+            return;
+        }
+
+        DrawFinalVehicleTexture(spriteBatch, Art.AutoPickupModule, WorldConfig.AutoPickupModuleTopLeftLocal, WorldConfig.AutoPickupModuleSize, GetDamageTint(_finalTransition.AutoPickupDamaged));
     }
 
     private static void DrawIntroVehicleTexture(SpriteBatch spriteBatch, Art art, Vector2 localPosition, Point size, Color tint)

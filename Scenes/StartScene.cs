@@ -8,9 +8,13 @@ public class StartScene : Scene
 {
     private const float BackgroundScrollSpeed = 95f;
     private const float SandstormScrollSpeed = 180f;
+    private static readonly Rectangle VehiclePreviewBounds = new(240, 284, 800, 432);
+    private static readonly float VehiclePreviewScale = VehiclePreviewBounds.Width / (float)WorldConfig.VehicleSize.X;
 
     private float _backgroundScrollX = 2050f;
     private float _sandstormScrollX;
+    private readonly float[] _wheelInitialRotations = VehicleEntity.CreateWheelInitialRotations();
+    private float _wheelRotation;
 
     public StartScene() : base()
     {
@@ -23,6 +27,8 @@ public class StartScene : Scene
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         _backgroundScrollX += BackgroundScrollSpeed * dt;
         _sandstormScrollX += SandstormScrollSpeed * dt;
+        _wheelRotation = MathHelper.WrapAngle(
+            _wheelRotation + VehicleEntity.GetWheelRotationDelta(BackgroundScrollSpeed * dt, VehiclePreviewScale));
 
         if (ServiceLocator.Input.IsActionPressed(Action.StartGame))
         {
@@ -36,7 +42,14 @@ public class StartScene : Scene
     {
         spriteBatch.Begin(samplerState: SamplerState.PointClamp);
         DrawScrollingBackground(spriteBatch);
-        spriteBatch.Draw(AssetManager.GetTexture(Art.Vehicle), new Rectangle(240, 284, 800, 432), Color.White * 0.9f);
+        spriteBatch.Draw(AssetManager.GetTexture(Art.Vehicle), VehiclePreviewBounds, Color.White * 0.9f);
+        VehicleEntity.DrawWheels(
+            spriteBatch,
+            new Vector2(VehiclePreviewBounds.X, VehiclePreviewBounds.Y),
+            VehiclePreviewScale,
+            _wheelRotation,
+            _wheelInitialRotations,
+            Color.White * 0.9f);
         DrawScrollingSand(spriteBatch);
         spriteBatch.Draw(AssetManager.GetTexture(Art.pixel), new Rectangle(0, 0, WorldConfig.ScreenWidth, WorldConfig.ScreenHeight), new Color(7, 10, 14, 118));
 

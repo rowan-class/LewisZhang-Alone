@@ -15,6 +15,11 @@ public class LevelScene : Scene, IPlayerScene
     private const float OffscreenFailureDuration = 10f;
     private const float SolarInstallStationTriggerDistance = 4300f;
     private const float RockEventClearance = 320f;
+    private const float InitialRockClearDistance = 500f;
+    private const float FuelBarrelSpawnChance = 0.62f;
+    private const int FuelBarrelSpawnMinSpacing = 520;
+    private const int FuelBarrelSpawnMaxSpacing = 920;
+    private const float TutorialPromptScale = 1.28f;
 
     private static readonly RockObstacle[] WorldRockObstacles = CreateWorldRockObstacles();
 
@@ -48,8 +53,17 @@ public class LevelScene : Scene, IPlayerScene
     private bool _repairGunExplained;
     private bool _isReturnCapsuleLaunching;
     private bool _isPaused;
+    private bool _enteredFromIntroWalkCarryingFuelBarrel;
+    private bool _throttleTutorialCompleted;
+    private bool _fuelTutorialCompleted;
     private FuelBarrelEntity _carriedFuelBarrel;
     private RepairGunEntity _carriedRepairGun;
+
+    public LevelScene(float debugStoryDistance)
+        : this()
+    {
+        ApplyDebugStoryDistance(debugStoryDistance);
+    }
 
     public LevelScene(SaveData saveData = null)
     {
@@ -84,6 +98,8 @@ public class LevelScene : Scene, IPlayerScene
         if (saveData != null)
         {
             RestoreSaveData(saveData);
+            _throttleTutorialCompleted = true;
+            _fuelTutorialCompleted = true;
         }
         else
         {
@@ -106,10 +122,38 @@ public class LevelScene : Scene, IPlayerScene
     public bool IsPlayerInputLocked => _eventManager.IsPlayerMovementLocked();
     public bool CanPlayerMoveLeft => true;
     public Rectangle PlayerMovementBounds => new(0, 0, WorldConfig.WorldWidth, WorldConfig.WorldHeight);
+    public Rectangle GroundCollisionBounds
+    {
+        get
+        {
+            Rectangle viewBounds = _camera.ViewBounds;
+            int leftPadding = WorldConfig.WorldWidth;
+            int rightPadding = WorldConfig.WorldWidth + 2000;
+            return new Rectangle(
+                viewBounds.Left - leftPadding,
+                WorldConfig.FakeGroundLocalRect.Y,
+                viewBounds.Width + leftPadding + rightPadding,
+                WorldConfig.FakeGroundLocalRect.Height);
+        }
+    }
 
     public IEnumerable<FuelBarrelEntity> GetFuelBarrels()
     {
         return _fuelBarrels;
+    }
+
+    public IEnumerable<Rectangle> GetWheelSuspensionObstacleBounds()
+    {
+        foreach (RockObstacle obstacle in WorldRockObstacles)
+        {
+            Rectangle bounds = GetWorldRockCollisionBounds(obstacle);
+            if (bounds.Right < _camera.ViewBounds.Left - 160 || bounds.Left > _camera.ViewBounds.Right + 160)
+            {
+                continue;
+            }
+
+            yield return bounds;
+        }
     }
 
     public override void Update(GameTime gameTime)
@@ -163,6 +207,11 @@ public class LevelScene : Scene, IPlayerScene
             }
         }
 
+        if (Game1.Debug && ServiceLocator.Input.IsActionPressed(Action.DebugRepairAll))
+        {
+            DebugRepairAllComponents();
+        }
+
         _ground.Update(gameTime);
         _eventManager.Update(gameTime, StoryDistance, _camera.ViewBounds, this);
         if (_isReturnCapsuleLaunching)
@@ -187,7 +236,18 @@ public class LevelScene : Scene, IPlayerScene
         _throttle.Update(gameTime);
         _vehicle.Update(gameTime);
         _fuelPort.Update(gameTime);
+        float fuelBeforeButtonUpdate = _vehicle.Fuel;
         _fuelButton.Update(gameTime);
+        if (_vehicle.Fuel > fuelBeforeButtonUpdate)
+        {
+            _fuelTutorialCompleted = true;
+        }
+
+        if (_throttle.State == ThrottleState.ActiveHold || _vehicle.Powered)
+        {
+            _throttleTutorialCompleted = true;
+        }
+
         _solarPanel.Update(gameTime);
 
         if (Game1.Debug)
@@ -215,29 +275,40 @@ public class LevelScene : Scene, IPlayerScene
 
     public override void Draw(SpriteBatch spriteBatch)
     {
+        bool playerOutsideVehicle = !IsPlayerInsideVehicle(_player);
+
         spriteBatch.Begin(transformMatrix: _camera.GetViewMatrix(), samplerState: SamplerState.PointClamp);
         DrawBackground(spriteBatch);
         _eventManager.DrawWorld(spriteBatch, _camera.ViewBounds);
         _ground.Draw(spriteBatch);
-        _vehicle.Draw(spriteBatch);
+        _vehicle.DrawBody(spriteBatch);
         _throttle.Draw(spriteBatch);
         _fuelDisplay.Draw(spriteBatch);
         _fuelPort.Draw(spriteBatch);
         _fuelButton.Draw(spriteBatch);
         _handbrakeButton.Draw(spriteBatch);
         _solarButton.Draw(spriteBatch);
-        _autoPickupModule.Draw(spriteBatch);
         _solarPanel.Draw(spriteBatch);
-        DrawWorldRockObstacles(spriteBatch);
-
-        DrawFuelBarrels(spriteBatch, carriedOnly: false);
-        DrawRepairGuns(spriteBatch, carriedOnly: false);
-        DrawFuelBarrels(spriteBatch, carriedOnly: true);
-        DrawRepairGuns(spriteBatch, carriedOnly: true);
-        if (!_isReturnCapsuleLaunching)
+        DrawFuelBarrels(spriteBatch, carriedOnly: false, aboveWheels: false);
+        DrawRepairGuns(spriteBatch, carriedOnly: false, aboveWheels: false);
+        DrawFuelBarrels(spriteBatch, carriedOnly: true, aboveWheels: false);
+        DrawRepairGuns(spriteBatch, carriedOnly: true, aboveWheels: false);
+        if (!playerOutsideVehicle && !_isReturnCapsuleLaunching)
         {
             _player.Draw(spriteBatch);
         }
+        _vehicle.DrawWheelsLayer(spriteBatch);
+        DrawWorldRockObstacles(spriteBatch);
+        DrawFuelBarrels(spriteBatch, carriedOnly: false, aboveWheels: true);
+        DrawRepairGuns(spriteBatch, carriedOnly: false, aboveWheels: true);
+        DrawFuelBarrels(spriteBatch, carriedOnly: true, aboveWheels: true);
+        DrawRepairGuns(spriteBatch, carriedOnly: true, aboveWheels: true);
+        if (playerOutsideVehicle && !_isReturnCapsuleLaunching)
+        {
+            _player.Draw(spriteBatch);
+        }
+
+        _autoPickupModule.Draw(spriteBatch);
         _eventManager.DrawOverlay(spriteBatch, _camera.ViewBounds);
 
         if (Game1.Debug)
@@ -546,19 +617,56 @@ public class LevelScene : Scene, IPlayerScene
         }
 
         _player.SetPosition(_vehicle.Position + transition.PlayerVehicleLocalPosition);
-        _preferOverviewView = true;
+        _preferOverviewView = false;
+        _enteredFromIntroWalkCarryingFuelBarrel = transition.IsCarryingFuelBarrel;
+        if (transition.IsCarryingFuelBarrel)
+        {
+            FuelBarrelEntity barrel = new(PositionSpace.Vehicle, transition.PlayerVehicleLocalPosition);
+            barrel.SetScene(this);
+            barrel.PickUp(_player);
+            barrel.Update(new GameTime());
+            _fuelBarrels.Add(barrel);
+            _carriedFuelBarrel = barrel;
+        }
+
         return true;
     }
 
-    private void DrawFuelBarrels(SpriteBatch spriteBatch, bool carriedOnly)
+    private void ApplyDebugStoryDistance(float debugStoryDistance)
+    {
+        if (debugStoryDistance <= 0f)
+        {
+            return;
+        }
+
+        SnapStoryDistance(debugStoryDistance);
+        _eventManager.ApplyDebugStoryDistance(debugStoryDistance, this);
+        _nextFuelSpawnX = MathF.Max(_nextFuelSpawnX, debugStoryDistance + WorldConfig.WorldWidth);
+        _preferOverviewView = true;
+        _throttleTutorialCompleted = true;
+        _fuelTutorialCompleted = true;
+        UpdateCameraMode();
+        _camera.Update(new GameTime(), 0f);
+    }
+
+    private void DrawFuelBarrels(SpriteBatch spriteBatch, bool carriedOnly, bool aboveWheels)
     {
         foreach (FuelBarrelEntity barrel in _fuelBarrels)
         {
-            if (barrel.IsActive && barrel.IsCarried == carriedOnly)
+            if (barrel.IsActive
+                && barrel.IsCarried == carriedOnly
+                && ShouldDrawFuelBarrelAboveWheels(barrel) == aboveWheels)
             {
                 barrel.Draw(spriteBatch);
             }
         }
+    }
+
+    private bool ShouldDrawFuelBarrelAboveWheels(FuelBarrelEntity barrel)
+    {
+        return barrel.IsCarried
+            ? !IsPlayerInsideVehicle(_player)
+            : barrel.Space == PositionSpace.World;
     }
 
     private void UpdateRepairGuns(GameTime gameTime)
@@ -572,15 +680,24 @@ public class LevelScene : Scene, IPlayerScene
         }
     }
 
-    private void DrawRepairGuns(SpriteBatch spriteBatch, bool carriedOnly)
+    private void DrawRepairGuns(SpriteBatch spriteBatch, bool carriedOnly, bool aboveWheels)
     {
         foreach (RepairGunEntity repairGun in _repairGuns)
         {
-            if (repairGun.IsActive && repairGun.IsCarried == carriedOnly)
+            if (repairGun.IsActive
+                && repairGun.IsCarried == carriedOnly
+                && ShouldDrawRepairGunAboveWheels(repairGun) == aboveWheels)
             {
                 repairGun.Draw(spriteBatch);
             }
         }
+    }
+
+    private bool ShouldDrawRepairGunAboveWheels(RepairGunEntity repairGun)
+    {
+        return repairGun.IsCarried
+            ? !IsPlayerInsideVehicle(_player)
+            : repairGun.Space == PositionSpace.World;
     }
 
     private void DrawWorldRockObstacles(SpriteBatch spriteBatch)
@@ -679,10 +796,12 @@ public class LevelScene : Scene, IPlayerScene
     private static bool IsWorldRockBlockedByLargeEvent(float worldLocalX, int width)
     {
         float right = worldLocalX + width;
+        float initialClearRight = WorldConfig.VehiclePosition.X + WorldConfig.VehicleSize.X + InitialRockClearDistance;
         float solarStationLeft = SolarInstallStationTriggerDistance + WorldConfig.SolarInstallStationStartScreenX;
         float solarStationRight = solarStationLeft + WorldConfig.SolarInstallStationSize.X;
 
-        return RangesOverlap(worldLocalX, right, 3300f, 6800f)
+        return RangesOverlap(worldLocalX, right, 0f, initialClearRight)
+            || RangesOverlap(worldLocalX, right, 3300f, 6800f)
             || RangesOverlap(worldLocalX, right, solarStationLeft - RockEventClearance, solarStationRight + RockEventClearance)
             || RangesOverlap(worldLocalX, right, 11150f, 12900f)
             || RangesOverlap(worldLocalX, right, 14850f, 16350f)
@@ -706,6 +825,8 @@ public class LevelScene : Scene, IPlayerScene
 
     private void DrawHud(SpriteBatch spriteBatch)
     {
+        DrawLevelTutorialPrompts(spriteBatch);
+
         string powerState = _vehicle.Powered ? "Powered" : "No Power";
         string cameraState = ShouldUseOverviewCamera() ? "Overview" : "Interior";
         string carryingState = _carriedFuelBarrel != null ? "Fuel Barrel" : _carriedRepairGun != null ? "Repair Gun" : "None";
@@ -724,8 +845,49 @@ public class LevelScene : Scene, IPlayerScene
             new HudLine("Auto pickup  " + (_autoPickupModule.IsEnabled ? "On" : "Off") + "    " + (_autoPickupModule.IsDamaged ? "Broken" : "OK"), Color.Yellow),
             new HudLine("Solar  " + (Game1.SolarPanelEnabled ? "On" : "Off") + "    " + solarCondition, Color.Cyan),
             new HudLine("Event  " + _eventManager.GetDebugStatus(), Color.Orange),
-            new HudLine("Damage  Fuel " + (_fuelPort.IsDamaged ? "Broken" : "OK") + "    Solar " + (_solarPanel.IsDamaged ? "Broken" : "OK") + "    Throttle " + (_throttle.IsDamaged ? "Broken" : "OK") + "    Pickup " + (_autoPickupModule.IsDamaged ? "Broken" : "OK"), Color.OrangeRed)
+            new HudLine("Damage  Fuel " + (_fuelPort.IsDamaged ? "Broken" : "OK") + "    Solar " + (_solarPanel.IsDamaged ? "Broken" : "OK") + "    Throttle " + (_throttle.IsDamaged ? "Broken" : "OK") + "    Pickup " + (_autoPickupModule.IsDamaged ? "Broken" : "OK"), Color.OrangeRed),
+            new HudLine("Debug keys  [ / ] speed    7 auto-pickup    8 solar module    F repair all", new Color(255, 232, 150))
         });
+    }
+
+    private void DrawLevelTutorialPrompts(SpriteBatch spriteBatch)
+    {
+        bool showThrottlePrompt = !_throttleTutorialCompleted;
+        bool showFuelPrompt = !_fuelTutorialCompleted;
+        bool showSolarInstallPrompt = _eventManager.ShouldShowSolarInstallButtonPrompt(_player);
+
+        if (!showThrottlePrompt && !showFuelPrompt && !showSolarInstallPrompt)
+        {
+            return;
+        }
+
+        float y = 110f;
+        if (showThrottlePrompt)
+        {
+            DrawCenteredTutorialPrompt(spriteBatch, "HOLD G + D TO PUSH THE THROTTLE", new Vector2(WorldConfig.ScreenWidth / 2f, y));
+            y += 48f;
+        }
+
+        if (showFuelPrompt)
+        {
+            DrawCenteredTutorialPrompt(spriteBatch, "CARRY FUEL TO THE PORT, THEN JUMP TO PRESS THE BUTTON", new Vector2(WorldConfig.ScreenWidth / 2f, y));
+            y += 48f;
+        }
+
+        if (showSolarInstallPrompt)
+        {
+            DrawCenteredTutorialPrompt(spriteBatch, "GO TO THE TOP LEVEL AND JUMP INTO THE BUTTON", new Vector2(WorldConfig.ScreenWidth / 2f, y));
+        }
+    }
+
+    private static void DrawCenteredTutorialPrompt(SpriteBatch spriteBatch, string text, Vector2 centerTop)
+    {
+        SpriteFont font = AssetManager.ArialFont;
+        Vector2 size = font.MeasureString(text) * TutorialPromptScale;
+        Vector2 position = new(centerTop.X - size.X / 2f, centerTop.Y);
+
+        spriteBatch.DrawString(font, text, position + new Vector2(2f, 2f), Color.Black * 0.78f, 0f, Vector2.Zero, TutorialPromptScale, SpriteEffects.None, 0f);
+        spriteBatch.DrawString(font, text, position, Color.White, 0f, Vector2.Zero, TutorialPromptScale, SpriteEffects.None, 0f);
     }
 
     private void DrawPauseOverlay(SpriteBatch spriteBatch)
@@ -744,10 +906,7 @@ public class LevelScene : Scene, IPlayerScene
             new HudLine("G + D                   Push throttle", Color.White),
             new HudLine("Shift                   Toggle camera view", Color.White),
             new HudLine("F5                      Save game", Color.White),
-            new HudLine("F3                      Toggle debug overlay", new Color(255, 232, 150)),
-            new HudLine("[ / ]                   Debug speed adjust", new Color(255, 232, 150)),
-            new HudLine("7                       Debug auto-pickup toggle", new Color(255, 232, 150)),
-            new HudLine("8                       Debug solar module toggle", new Color(255, 232, 150))
+            new HudLine("F3                      Toggle debug overlay", new Color(255, 232, 150))
         });
     }
 
@@ -790,8 +949,12 @@ public class LevelScene : Scene, IPlayerScene
     {
         while (_nextFuelSpawnX < _worldScrollX + WorldConfig.WorldWidth + 1600f)
         {
-            SpawnFuelBarrelAt(_nextFuelSpawnX);
-            _nextFuelSpawnX += _random.Next(520, 920);
+            if (_random.NextDouble() < FuelBarrelSpawnChance)
+            {
+                SpawnFuelBarrelAt(_nextFuelSpawnX);
+            }
+
+            _nextFuelSpawnX += _random.Next(FuelBarrelSpawnMinSpacing, FuelBarrelSpawnMaxSpacing);
         }
     }
 
@@ -1132,6 +1295,16 @@ public class LevelScene : Scene, IPlayerScene
     private void TriggerRepairFlash()
     {
         _repairFlashTimer = RepairFlashDuration;
+    }
+
+    private void DebugRepairAllComponents()
+    {
+        _fuelPort.Repair();
+        _solarPanel.Repair();
+        _throttle.Repair();
+        _autoPickupModule.Repair();
+        _damageFailureTimer = 0f;
+        TriggerRepairFlash();
     }
 
     private void UpdateDamageFailureState(float dt)

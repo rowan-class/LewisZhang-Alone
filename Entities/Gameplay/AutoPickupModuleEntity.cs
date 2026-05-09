@@ -104,8 +104,11 @@ public class AutoPickupModuleEntity : SpaceEntity
             return Rectangle.Empty;
         }
 
-        int height = System.Math.Max(0, WorldConfig.FakeGroundLocalRect.Y - bounds.Bottom);
-        return new Rectangle(bounds.X, bounds.Bottom, bounds.Width, height);
+        int originalTop = bounds.Bottom;
+        int bottom = System.Math.Max(originalTop, WorldConfig.FakeGroundLocalRect.Y);
+        int originalHeight = bottom - originalTop;
+        int top = originalTop - originalHeight;
+        return new Rectangle(bounds.X, top, bounds.Width, bottom - top);
     }
 
     private Color GetDamageTint()

@@ -13,6 +13,19 @@ public class GroundEntity : SpaceEntity
     {
     }
 
+    public override void Update(GameTime gameTime)
+    {
+        if (_scene is LevelScene levelScene)
+        {
+            Rectangle bounds = levelScene.GroundCollisionBounds;
+            _position = new Vector2(bounds.X, bounds.Y);
+            _size = new Point(bounds.Width, bounds.Height);
+            return;
+        }
+
+        base.Update(gameTime);
+    }
+
     public override void Draw(SpriteBatch spriteBatch)
     {
     }

@@ -18,7 +18,8 @@ public enum Action
     DebugSpeedDecrease,
     DebugSpeedIncrease,
     ToggleAutoPickupModule,
-    ToggleSolarPanelModule
+    ToggleSolarPanelModule,
+    DebugRepairAll
 }
 
 public class Input
@@ -39,7 +40,8 @@ public class Input
             { Action.DebugSpeedDecrease, new List<Keys> { Keys.OemOpenBrackets } },
             { Action.DebugSpeedIncrease, new List<Keys> { Keys.OemCloseBrackets } },
             { Action.ToggleAutoPickupModule, new List<Keys> { Keys.D7, Keys.NumPad7 } },
-            { Action.ToggleSolarPanelModule, new List<Keys> { Keys.D8, Keys.NumPad8 } }
+            { Action.ToggleSolarPanelModule, new List<Keys> { Keys.D8, Keys.NumPad8 } },
+            { Action.DebugRepairAll, new List<Keys> { Keys.F } }
         };
 
     private KeyboardState currentState;

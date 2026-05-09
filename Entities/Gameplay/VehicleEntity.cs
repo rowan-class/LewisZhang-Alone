@@ -49,6 +49,8 @@ public class VehicleEntity : SpriteEntity
     private const float CruisingFuelUsePerSecond = 1.5f;
     private const int WheelSize = 104;
     private const float WheelRadius = WheelSize / 2f;
+    private const float WheelSuspensionMaxTravel = 58f;
+    private const float WheelSuspensionSharpness = 18f;
 
     private static readonly Vector2[] WheelCentersLocal =
     {
@@ -85,6 +87,7 @@ public class VehicleEntity : SpriteEntity
 
     private readonly VehicleResources _resources = new();
     private readonly float[] _wheelInitialRotations;
+    private readonly float[] _wheelSuspensionOffsets = new float[WheelCentersLocal.Length];
     private float _speed;
     private float _wheelRotation;
 
@@ -132,28 +135,58 @@ public class VehicleEntity : SpriteEntity
         }
 
         _wheelRotation = MathHelper.WrapAngle(_wheelRotation + Speed * dt / WheelRadius);
+        UpdateWheelSuspension(dt);
     }
 
     public override void Draw(SpriteBatch spriteBatch)
     {
-        base.Draw(spriteBatch);
+        DrawWheelsLayer(spriteBatch);
+        DrawBody(spriteBatch);
+    }
 
+    public void DrawBody(SpriteBatch spriteBatch)
+    {
+        base.Draw(spriteBatch);
+    }
+
+    public void DrawWheelsLayer(SpriteBatch spriteBatch)
+    {
         if (!_isActive)
         {
             return;
         }
 
+        DrawWheels(spriteBatch, _position, 1f, _wheelRotation, _wheelInitialRotations, Color.White, _wheelSuspensionOffsets);
+    }
+
+    public static float GetWheelRotationDelta(float travelDistance, float vehicleScale)
+    {
+        float renderedWheelRadius = WheelRadius * System.MathF.Max(0.001f, vehicleScale);
+        return travelDistance / renderedWheelRadius;
+    }
+
+    public static void DrawWheels(
+        SpriteBatch spriteBatch,
+        Vector2 vehiclePosition,
+        float vehicleScale,
+        float wheelRotation,
+        float[] wheelInitialRotations,
+        Color tint,
+        float[] suspensionOffsets = null)
+    {
         Texture2D wheelTexture = AssetManager.GetTexture(Art.Wheel);
         Vector2 origin = new(wheelTexture.Width / 2f, wheelTexture.Height / 2f);
-        float scale = WheelSize / (float)wheelTexture.Width;
+        float scale = WheelSize * vehicleScale / wheelTexture.Width;
         for (int i = 0; i < WheelCentersLocal.Length; i++)
         {
+            float initialRotation = i < wheelInitialRotations.Length ? wheelInitialRotations[i] : 0f;
+            float suspensionOffset = suspensionOffsets != null && i < suspensionOffsets.Length ? suspensionOffsets[i] : 0f;
             spriteBatch.Draw(
                 wheelTexture,
-                _position + WheelCentersLocal[i],
+                vehiclePosition + WheelCentersLocal[i] * vehicleScale - new Vector2(0f, suspensionOffset * vehicleScale),
                 null,
-                Color.White,
-                _wheelRotation + _wheelInitialRotations[i],
+                tint,
+                wheelRotation + initialRotation,
                 origin,
                 scale,
                 SpriteEffects.None,
@@ -282,6 +315,52 @@ public class VehicleEntity : SpriteEntity
         }
     }
 
+    private void UpdateWheelSuspension(float dt)
+    {
+        float smoothing = dt <= 0f ? 1f : 1f - System.MathF.Exp(-WheelSuspensionSharpness * dt);
+
+        for (int i = 0; i < _wheelSuspensionOffsets.Length; i++)
+        {
+            float targetOffset = GetWheelSuspensionTarget(i);
+            _wheelSuspensionOffsets[i] = MathHelper.Lerp(_wheelSuspensionOffsets[i], targetOffset, smoothing);
+        }
+    }
+
+    private float GetWheelSuspensionTarget(int wheelIndex)
+    {
+        if (_scene is not LevelScene levelScene)
+        {
+            return 0f;
+        }
+
+        Vector2 wheelCenter = _position + WheelCentersLocal[wheelIndex];
+        float wheelBottom = wheelCenter.Y + WheelRadius;
+        float targetOffset = 0f;
+
+        foreach (Rectangle obstacle in levelScene.GetWheelSuspensionObstacleBounds())
+        {
+            if (obstacle.Top >= wheelBottom)
+            {
+                continue;
+            }
+
+            float obstacleCenterX = obstacle.Center.X;
+            float horizontalReach = obstacle.Width / 2f + WheelRadius;
+            float distanceX = System.MathF.Abs(wheelCenter.X - obstacleCenterX);
+            if (distanceX > horizontalReach)
+            {
+                continue;
+            }
+
+            float contactAmount = MathHelper.Clamp(1f - distanceX / horizontalReach, 0f, 1f);
+            float curvedContact = System.MathF.Sin(contactAmount * MathHelper.PiOver2);
+            float liftAmount = (wheelBottom - obstacle.Top) * curvedContact;
+            targetOffset = System.MathF.Max(targetOffset, liftAmount);
+        }
+
+        return MathHelper.Clamp(targetOffset, 0f, WheelSuspensionMaxTravel);
+    }
+
     private float GetSolarSpeedBonus()
     {
         return Game1.SolarPanelEnabled && Game1.SolarPanelHasEnergy && SolarDriveActive ? SolarSpeedBonus : 0f;
@@ -292,7 +371,7 @@ public class VehicleEntity : SpriteEntity
         return System.MathF.Max(0f, WorldConfig.VehicleMaxSpeed - GetSolarSpeedBonus());
     }
 
-    private static float[] CreateWheelInitialRotations()
+    public static float[] CreateWheelInitialRotations()
     {
         System.Random random = new(System.Guid.NewGuid().GetHashCode());
         float[] rotations = new float[WheelCentersLocal.Length];

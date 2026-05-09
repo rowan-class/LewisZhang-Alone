@@ -34,7 +34,7 @@
     "id": "sandstorm_after_station",
     "type": "sandstorm",
     "minDistance": 11300.0,
-    "maxDistance": 12750.0,
+    "maxDistance": 12350.0,
     "scrollSpeed": 560.0,
     "alpha": 0.74
   },
@@ -105,9 +105,20 @@
     "triggerDistance": 25500.0
   },
   {
+    "id": "repair_broken_component_hint",
+    "type": "dialogue",
+    "triggerDistance": 25525.0,
+    "dialogue": [
+      {
+        "speaker": "houston",
+        "text": "Fuel port just failed. Use the repair gun on the broken module before it costs us too much time."
+      }
+    ]
+  },
+  {
     "id": "sandstorm_return_plan",
     "type": "sandstorm",
-    "minDistance": 24250.0,
+    "minDistance": 25650.0,
     "maxDistance": 26700.0,
     "scrollSpeed": 600.0,
     "alpha": 0.78
@@ -171,7 +182,7 @@
   {
     "id": "solar_day_2",
     "type": "solar_day",
-    "triggerDistance": 33350.0
+    "triggerDistance": 35000.0
   },
   {
     "id": "sandstorm_breaks_fuel_port",
@@ -225,6 +236,6 @@
   {
     "id": "final_walk_scene",
     "type": "final_walk",
-    "triggerDistance": 48300.0
+    "triggerDistance": 48200.0
   }
 ]

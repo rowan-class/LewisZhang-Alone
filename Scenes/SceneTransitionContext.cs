@@ -5,6 +5,7 @@ namespace LewisZhang_Alone;
 public sealed class IntroToLevelTransition
 {
     public Vector2 PlayerVehicleLocalPosition { get; init; }
+    public bool IsCarryingFuelBarrel { get; init; }
 }
 
 public sealed class LevelToFinalWalkTransition

@@ -72,13 +72,14 @@ public static class WorldConfig
     public const float SolarInstallPanelDropSpeed = 240f;
     public static readonly Rectangle CloseViewBounds = new((int)(VehiclePosition.X - 140f), (int)(VehiclePosition.Y - 120f), ScreenWidth, ScreenHeight);
     public static readonly Rectangle VehicleCabinBoundsLocal = new(60, -120, 860, 540);
-    public static readonly Rectangle FakeGroundLocalRect = new(-20000, OverviewViewBounds.Bottom - 120, 50000, 120);
+    public static readonly Rectangle FakeGroundLocalRect = new(0, OverviewViewBounds.Bottom - 120, WorldWidth, 120);
+    public static readonly Rectangle SolarInstallStationTopPlatformLocalRect = new(100, 300, 1200, 24);
     public static readonly Rectangle[] SolarInstallStationCollisionLocalRectangles =
     {
         //天花板
-        new Rectangle(1100, 186-24, 200, 24),
+        new Rectangle(1100, 186-24, 400, 24),
         //最上一层
-        new Rectangle(100, 300, 1200, 24),
+        SolarInstallStationTopPlatformLocalRect,
         //楼梯
         new Rectangle(0, 800, 250, 24),
         new Rectangle(100, 700, 200, 24),

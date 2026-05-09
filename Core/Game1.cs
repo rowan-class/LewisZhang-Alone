@@ -23,10 +23,12 @@ public class Game1 : Game
     // Press F3 in-game to toggle collision bounds and debug panels.
     public static bool Debug = false;
     // Set this to jump straight into a level while debugging.
-    public static DebugStartLevel DebugStartLevel = DebugStartLevel.Vehicle;
+    public static DebugStartLevel DebugStartLevel = DebugStartLevel.None;
+    // Only used when DebugStartLevel is Vehicle. Set to 0 to start the vehicle level normally.
+    public static float DebugVehicleStartDistance = 0f;
 // DebugStartLevel.None       // 正常从 start screen 开始
 // DebugStartLevel.IntroWalk  // 直接进开头走路场景
-// DebugStartLevel.Vehicle    // 直接进车 level
+// DebugStartLevel.Vehicle    // 直接进车 level，可用 DebugVehicleStartDistance 指定距离
 // DebugStartLevel.FinalWalk  // 直接进结尾走路场景
 // DebugStartLevel.GameOver   // 直接进 game over 页面
 // DebugStartLevel.Complete   // 直接进 mission complete 页面
@@ -145,7 +147,9 @@ public class Game1 : Game
                 return new WalkingScene(WalkingSceneMode.Intro);
             },
             ["continue"] = () => new LevelScene(SaveManager.Load()),
-            ["level1"] = () => new LevelScene(),
+            ["level1"] = () => DebugStartLevel == DebugStartLevel.Vehicle
+                ? new LevelScene(DebugVehicleStartDistance)
+                : new LevelScene(),
             ["finalWalk"] = () => new WalkingScene(WalkingSceneMode.Final),
             ["end"] = () => new EndScene(),
             ["gameOver"] = () => new GameOverScene(),

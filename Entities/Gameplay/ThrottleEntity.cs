@@ -15,7 +15,7 @@ public enum ThrottleState
 
 public class ThrottleEntity : SpaceEntity
 {
-    private const float HoldDuration = 4f;
+    private const float HoldDuration = 6f;
     private const float SlowReturnSpeed = 0.45f;
     private const float FastReturnSpeed = 2.6f;
     private const float PlayerContactOverlap = 2f;

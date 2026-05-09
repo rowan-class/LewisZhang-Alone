@@ -110,6 +110,63 @@ public class WorldEventManager
         }
     }
 
+    public void ApplyDebugStoryDistance(float travelDistance, LevelScene levelScene)
+    {
+        _lastTravelDistance = travelDistance;
+
+        foreach (WorldEventDefinition definition in _definitions)
+        {
+            if (!_runtimeStates.TryGetValue(definition.Id, out WorldEventRuntimeState runtime))
+            {
+                continue;
+            }
+
+            if (travelDistance < GetActivationDistance(definition))
+            {
+                continue;
+            }
+
+            runtime.HasTriggered = true;
+
+            if (string.Equals(definition.Type, SolarInstallStationType, StringComparison.OrdinalIgnoreCase))
+            {
+                ApplyDebugSolarInstallStationState(definition, runtime, travelDistance);
+                continue;
+            }
+
+            if (IsDistanceRangeWeather(definition))
+            {
+                ApplyDebugWeatherState(definition, runtime, travelDistance);
+                continue;
+            }
+
+            if (string.Equals(definition.Type, SolarDayType, StringComparison.OrdinalIgnoreCase))
+            {
+                SetSolarDaytime(true, levelScene);
+                runtime.IsActive = false;
+                continue;
+            }
+
+            if (string.Equals(definition.Type, SolarNightType, StringComparison.OrdinalIgnoreCase))
+            {
+                SetSolarDaytime(false, levelScene);
+                runtime.IsActive = false;
+                continue;
+            }
+
+            if (string.Equals(definition.Type, ComponentFailureType, StringComparison.OrdinalIgnoreCase))
+            {
+                levelScene?.DamageComponent(definition.Target);
+                runtime.IsActive = false;
+                continue;
+            }
+
+            runtime.IsActive = false;
+        }
+
+        UpdateSolarWeatherBlock(levelScene);
+    }
+
     public void Update(GameTime gameTime, float travelDistance, Rectangle cameraViewBounds, LevelScene levelScene)
     {
         _lastTravelDistance = travelDistance;
@@ -272,6 +329,36 @@ public class WorldEventManager
             {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    public bool ShouldShowSolarInstallButtonPrompt(Player player)
+    {
+        if (player == null || Game1.SolarPanelEnabled)
+        {
+            return false;
+        }
+
+        foreach (WorldEventDefinition definition in _definitions)
+        {
+            if (!string.Equals(definition.Type, SolarInstallStationType, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (!_runtimeStates.TryGetValue(definition.Id, out WorldEventRuntimeState runtime) || !runtime.IsActive)
+            {
+                continue;
+            }
+
+            if ((SolarInstallStationPhase)runtime.Phase != SolarInstallStationPhase.Ready)
+            {
+                continue;
+            }
+
+            return runtime.SheetCount <= 0;
         }
 
         return false;
@@ -692,6 +779,11 @@ public class WorldEventManager
                     break;
                 }
 
+                if (IsPlayerOnSolarInstallTopPlatform(levelScene.Player, definition))
+                {
+                    runtime.SheetCount = 1;
+                }
+
                 if (CanPressSolarInstallButton(runtime) && IsSolarInstallButtonPressed(levelScene.Player, definition))
                 {
                     runtime.Phase = (int)SolarInstallStationPhase.Installing;
@@ -1086,6 +1178,64 @@ public class WorldEventManager
             : definition.TriggerDistance;
     }
 
+    private void ApplyDebugSolarInstallStationState(WorldEventDefinition definition, WorldEventRuntimeState runtime, float travelDistance)
+    {
+        runtime.RemainingDuration = 0f;
+        runtime.ScrollOffset = 0f;
+        runtime.AuxiliaryValue = 0f;
+
+        float dockedDistance = GetSolarInstallStationDockedTravelDistance(definition);
+        float fullyPassedDistance = GetSolarInstallStationBaseWorldLocalX(definition) + WorldConfig.SolarInstallStationSize.X;
+        if (travelDistance >= fullyPassedDistance)
+        {
+            Game1.SolarPanelEnabled = true;
+            runtime.IsActive = false;
+            runtime.Phase = (int)SolarInstallStationPhase.Completed;
+            runtime.SheetCount = 1;
+            return;
+        }
+
+        runtime.IsActive = true;
+        runtime.SheetCount = 0;
+        if (travelDistance < definition.TriggerDistance)
+        {
+            runtime.Phase = (int)SolarInstallStationPhase.Approaching;
+        }
+        else if (travelDistance < dockedDistance)
+        {
+            runtime.Phase = (int)SolarInstallStationPhase.Docking;
+        }
+        else
+        {
+            runtime.Phase = (int)SolarInstallStationPhase.Ready;
+        }
+    }
+
+    private void ApplyDebugWeatherState(WorldEventDefinition definition, WorldEventRuntimeState runtime, float travelDistance)
+    {
+        float minDistance = GetWeatherMinDistance(definition);
+        float maxDistance = GetWeatherMaxDistance(definition);
+        if (travelDistance > maxDistance)
+        {
+            runtime.IsActive = false;
+            runtime.RemainingDuration = 0f;
+            runtime.ScrollOffset = 0f;
+            runtime.SheetCount = 0;
+            return;
+        }
+
+        runtime.IsActive = true;
+        runtime.RemainingDuration = MathF.Max(0f, maxDistance - travelDistance);
+        runtime.ScrollOffset = MathF.Max(0f, travelDistance - minDistance);
+        runtime.SheetCount = 1;
+        if (string.Equals(definition.Type, LightningType, StringComparison.OrdinalIgnoreCase))
+        {
+            runtime.Phase = _random.Next(1, int.MaxValue);
+            runtime.AuxiliaryValue = GetLightningFlashDuration(definition);
+            runtime.ScrollOffset = RandomRange(GetLightningMinInterval(definition), GetLightningMaxInterval(definition));
+        }
+    }
+
     private static float GetSandstormMinDistance(WorldEventDefinition definition)
     {
         return GetWeatherMinDistance(definition);
@@ -1246,6 +1396,33 @@ public class WorldEventManager
                 localRect.Width,
                 localRect.Height);
         }
+    }
+
+    private bool IsPlayerOnSolarInstallTopPlatform(Player player, WorldEventDefinition definition)
+    {
+        Rectangle playerBounds = player.GetBounds();
+        if (playerBounds == Rectangle.Empty || !player.IsGrounded)
+        {
+            return false;
+        }
+
+        Rectangle platformBounds = GetSolarInstallTopPlatformWorldBounds(definition);
+        bool overlapsHorizontally = playerBounds.Right > platformBounds.Left
+            && playerBounds.Left < platformBounds.Right;
+        bool isStandingOnPlatform = Math.Abs(playerBounds.Bottom - platformBounds.Top) <= 8;
+
+        return overlapsHorizontally && isStandingOnPlatform;
+    }
+
+    private Rectangle GetSolarInstallTopPlatformWorldBounds(WorldEventDefinition definition)
+    {
+        Rectangle stationBounds = GetSolarInstallStationWorldBounds(definition);
+        Rectangle localRect = WorldConfig.SolarInstallStationTopPlatformLocalRect;
+        return new Rectangle(
+            stationBounds.X + localRect.X,
+            stationBounds.Y + localRect.Y,
+            localRect.Width,
+            localRect.Height);
     }
 
     private Rectangle GetSolarInstallButtonWorldBounds(WorldEventDefinition definition)
